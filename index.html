@@ -1,0 +1,1918 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <title>ThaiFlood Watch | ระบบติดตามน้ำท่วมประเทศไทย</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * { font-family: 'Sarabun', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; overflow: hidden; }
+    #map { height: 100%; width: 100%; z-index: 0; min-height: 300px; }
+    .sidebar-item.active { background: linear-gradient(135deg, #0d9488 0%, #0ea5e9 100%); color: white; }
+    .layer-btn.active { background-color: #0d9488; color: white; }
+    .modal-backdrop { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1); }
+    .scrollbar-thin::-webkit-scrollbar { width: 5px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: #f1f5f9; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+    .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.15); }
+    .gov-badge { display: inline-block; font-size: 0.75rem; line-height: 1; vertical-align: middle; }
+    .src-link { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 0.5rem; text-decoration: none; transition: background 0.15s; }
+    .src-link:hover { filter: brightness(0.95); }
+    @media (max-width: 768px) {
+      #sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); transition: transform 0.3s ease; z-index: 50; }
+      #sidebar.open { transform: translateX(0); }
+      #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 40; }
+      #sidebar-overlay.show { display: block; }
+    }
+    .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div class="flex h-screen overflow-hidden">
+    <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="w-72 max-w-[85vw] bg-white border-r border-slate-200 flex flex-col shadow-lg md:shadow-sm z-50 md:z-20 shrink-0">
+      <div class="p-4 md:p-5 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-sky-500 flex items-center justify-center text-white shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M2 12q2.5 2 5 0t5 0 5 0 5 0"></path><path d="M2 19q2.5 2 5 0t5 0 5 0 5 0"></path><path d="M2 5q2.5 2 5 0t5 0 5 0 5 0"></path></svg>
+          </div>
+          <div>
+            <h1 class="font-bold text-base md:text-lg text-slate-800 leading-tight">ThaiFlood Watch</h1>
+            <p class="text-xs text-slate-500">ระบบติดตามน้ำท่วมประเทศไทย</p>
+          </div>
+        </div>
+        <button onclick="closeSidebar()" class="md:hidden p-2 text-slate-400 hover:text-slate-600">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        </button>
+      </div>
+
+      <nav class="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin">
+        <button onclick="switchView('map')" data-view="map" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all"><span>🗺️</span> แผนที่หลัก</button>
+        <button onclick="switchView('flooded')" data-view="flooded" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all"><span>💧</span> พื้นที่น้ำท่วมขัง</button>
+        <button onclick="switchView('risk')" data-view="risk" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all"><span>⚠️</span> พื้นที่เสี่ยงน้ำท่วม</button>
+        <button onclick="switchView('gates')" data-view="gates" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all"><span>🚪</span> ประตูระบายน้ำ</button>
+
+        <div class="pt-3 pb-1 px-4"><p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">ข้อมูลสถานการณ์</p></div>
+
+        <button onclick="switchView('situation')" data-view="situation" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all"><span>📄</span> สถานการณ์น้ำ</button>
+        <button onclick="switchView('weather')" data-view="weather" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all"><span>🌤️</span> วิเคราะห์สภาพอากาศ</button>
+        <button onclick="switchView('alert')" data-view="alert" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all"><span>🚨</span> เตือนภัย</button>
+
+        <div class="pt-3 pb-1 px-4"><p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">ระบบ</p></div>
+
+        <button onclick="switchView('settings')" data-view="settings" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all"><span>⚙️</span> ตั้งค่า (Admin)</button>
+      </nav>
+
+      <div class="p-4 border-t border-slate-100 text-xs text-slate-500">
+        <p>ข้อมูลจากประชาชน + หน่วยงานราชการ</p>
+        <p class="mt-1">© 2026 ThaiFlood Watch</p>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="flex-1 flex flex-col relative min-w-0">
+      <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-3 md:px-5 z-10 shrink-0">
+        <div class="flex items-center gap-2 md:gap-3 min-w-0">
+          <button onclick="openSidebar()" class="md:hidden p-2 -ml-1 text-slate-600 hover:bg-slate-100 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg>
+          </button>
+          <button onclick="switchView('map')" class="p-2 text-teal-600 hover:bg-teal-50 rounded-lg"><span>🏠</span></button>
+          <h2 id="page-title" class="font-semibold text-slate-800 text-sm md:text-base truncate">แผนที่หลัก</h2>
+        </div>
+
+        <div class="flex items-center gap-1.5 md:gap-3">
+          <button onclick="locateMe()" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg" title="ตำแหน่งปัจจุบัน">📍</button>
+          <button onclick="refreshAllData(true)" id="btn-refresh" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg relative" title="อัปเดตข้อมูล">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5" id="refresh-icon"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+          </button>
+          <div id="layer-toggles" class="hidden md:flex gap-1.5 items-center">
+            <button onclick="toggleLayer('flooded')" id="btn-flooded" class="layer-btn active px-2.5 py-1 rounded-lg text-xs font-medium bg-teal-100 text-teal-800 transition">น้ำท่วมขัง</button>
+            <button onclick="toggleLayer('risk')" id="btn-risk" class="layer-btn active px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-100 text-amber-800 transition">พื้นที่เสี่ยง</button>
+            <button onclick="toggleLayer('gates')" id="btn-gates" class="layer-btn active px-2.5 py-1 rounded-lg text-xs font-medium bg-sky-100 text-sky-800 transition">ประตูระบาย</button>
+            <button onclick="toggleLayer('tele')" id="btn-tele" class="layer-btn active px-2.5 py-1 rounded-lg text-xs font-medium bg-violet-100 text-violet-800 transition">โทรมาตร</button>
+            <button data-tele-load onclick="loadTelemetryStations(true)" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition">+ โหลดโทรมาตร</button>
+          </div>
+          <button onclick="openAddModal()" id="btn-add" class="flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-teal-500 to-sky-500 text-white rounded-xl text-xs md:text-sm font-medium shadow-sm hidden">➕ <span class="hidden sm:inline">เพิ่มข้อมูล</span></button>
+          <div id="admin-badge" class="items-center gap-1.5 px-2 py-1 bg-rose-50 text-rose-700 rounded-lg text-xs font-medium hidden">
+            🛡️ <span class="hidden sm:inline">Admin</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="flex-1 relative overflow-hidden">
+
+        <!-- MAP -->
+        <div id="view-map" class="absolute inset-0">
+          <div id="map"></div>
+          <div class="absolute bottom-20 left-3 md:bottom-24 md:left-6 bg-white/95 backdrop-blur rounded-xl shadow-lg p-3 md:p-4 z-[1000] text-xs md:text-sm hidden sm:block">
+            <p class="font-semibold text-slate-700 mb-1.5">สัญลักษณ์</p>
+            <div class="space-y-1">
+              <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500 border border-white"></span> น้ำท่วมขัง</div>
+              <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-amber-500 border border-white"></span> พื้นที่เสี่ยง</div>
+              <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-sky-600 border border-white"></span> ประตูระบาย</div>
+              <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-violet-600 border border-white"></span> สถานีโทรมาตร</div>
+              <div class="flex items-center gap-2"><span>🏛️</span> ข้อมูลจากหน่วยงานราชการ</div>
+            </div>
+          </div>
+          <div class="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 z-[1000] px-1 py-1.5 safe-bottom md:hidden">
+            <div class="flex justify-around items-center max-w-lg mx-auto">
+              <button onclick="switchView('flooded')" class="flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg hover:bg-slate-100 text-slate-600 min-w-[52px]"><span class="text-lg">💧</span><span class="text-[9px] font-medium">น้ำท่วม</span></button>
+              <button onclick="switchView('risk')" class="flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg hover:bg-slate-100 text-slate-600 min-w-[52px]"><span class="text-lg">⚠️</span><span class="text-[9px] font-medium">เสี่ยง</span></button>
+              <button onclick="switchView('gates')" class="flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg hover:bg-slate-100 text-slate-600 min-w-[52px]"><span class="text-lg">🚪</span><span class="text-[9px] font-medium">ประตู</span></button>
+              <button onclick="switchView('situation')" class="flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg hover:bg-slate-100 text-slate-600 min-w-[52px]"><span class="text-lg">📄</span><span class="text-[9px] font-medium">สถานการณ์</span></button>
+              <button onclick="switchView('weather')" class="flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg hover:bg-slate-100 text-slate-600 min-w-[52px]"><span class="text-lg">🌤️</span><span class="text-[9px] font-medium">อากาศ</span></button>
+              <button onclick="switchView('alert')" class="flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg hover:bg-slate-100 text-slate-600 min-w-[52px]"><span class="text-lg">🚨</span><span class="text-[9px] font-medium">เตือนภัย</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- LIST -->
+        <div id="view-list" class="absolute inset-0 bg-slate-50 overflow-y-auto p-4 md:p-6 hidden">
+          <div class="max-w-5xl mx-auto">
+            <div class="flex justify-between items-center mb-4 md:mb-6">
+              <h3 id="list-title" class="text-lg md:text-xl font-bold text-slate-800">พื้นที่น้ำท่วมขัง</h3>
+              <button onclick="openAddModal()" class="flex items-center gap-1.5 px-3 py-2 bg-teal-500 text-white rounded-xl text-sm font-medium">➕ เพิ่ม</button>
+            </div>
+            <div id="list-container" class="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"></div>
+          </div>
+        </div>
+
+        <!-- SITUATION -->
+        <div id="view-situation" class="hidden absolute inset-0 bg-slate-50 overflow-y-auto p-4 md:p-6">
+          <div class="max-w-6xl mx-auto">
+            <h3 class="text-lg md:text-xl font-bold text-slate-800 mb-1">สถานการณ์น้ำ</h3>
+            <p class="text-slate-500 text-sm mb-4">ข้อมูลจากหน่วยงานราชการ</p>
+
+            <div class="bg-white rounded-2xl border border-teal-100 p-4 mb-4">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-semibold text-slate-800">🏞️ เขื่อนขนาดใหญ่ (กรมชลประทาน)</h4>
+                <button onclick="fetchRidDams()" class="text-xs text-teal-600 hover:underline">🔄 รีเฟรช</button>
+              </div>
+              <div id="rid-dams-content" class="text-sm text-slate-600"><p class="text-slate-400">กำลังโหลด...</p></div>
+            </div>
+
+            <div id="api-water-results" class="mb-6 hidden">
+              <div class="bg-white rounded-2xl border border-teal-100 p-4 mb-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-semibold text-slate-800">📡 ข้อมูลจาก API ที่ตั้งค่า</h4>
+                  <button onclick="fetchConfiguredApis('water')" class="text-xs text-teal-600 hover:underline">รีเฟรช</button>
+                </div>
+                <div id="api-water-content" class="text-sm text-slate-600 space-y-2"></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <a href="https://www.onwr.go.th" target="_blank" rel="noopener" class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm"><p class="font-medium text-slate-800 text-sm">สทนช.</p><p class="text-xs text-slate-500 mt-0.5">รายงานสถานการณ์น้ำภาพรวม</p></a>
+              <a href="https://www.thaiwater.net" target="_blank" rel="noopener" class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm"><p class="font-medium text-slate-800 text-sm">ThaiWater</p><p class="text-xs text-slate-500 mt-0.5">ระดับน้ำเขื่อน เรียลไทม์</p></a>
+              <a href="https://www.rid.go.th" target="_blank" rel="noopener" class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm"><p class="font-medium text-slate-800 text-sm">กรมชลประทาน</p><p class="text-xs text-slate-500 mt-0.5">สถานการณ์น้ำในอ่างเก็บน้ำ</p></a>
+
+              <!-- กทม. หลายโดเมนเรียงลำดับ -->
+              <div class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
+                <p class="font-medium text-slate-800 text-sm">🌆 กทม. - แผนที่น้ำท่วม</p>
+                <p class="text-xs text-slate-500 mt-0.5">แผนที่ถนนน้ำท่วมขัง (เรียลไทม์)</p>
+                <div class="mt-2 flex flex-wrap gap-1.5">
+                  <a href="https://weather.bangkok.go.th/Flood/" target="_blank" rel="noopener" class="src-link bg-teal-50 text-teal-700">1. weather.bangkok.go.th</a>
+                  <a href="https://dds.bangkok.go.th" target="_blank" rel="noopener" class="src-link bg-sky-50 text-sky-700">2. dds.bangkok.go.th</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- WEATHER -->
+        <div id="view-weather" class="hidden absolute inset-0 bg-slate-50 overflow-y-auto p-4 md:p-6">
+          <div class="max-w-6xl mx-auto">
+            <h3 class="text-lg md:text-xl font-bold text-slate-800 mb-1">วิเคราะห์สภาพอากาศ</h3>
+            <p class="text-slate-500 text-sm mb-4">ข้อมูลจากกรมอุตุนิยมวิทยาและ API</p>
+            <div class="bg-white rounded-2xl border border-sky-100 p-4 mb-6">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-semibold text-slate-800">☁️ สภาพอากาศปัจจุบัน</h4>
+                <button onclick="fetchWeather()" class="text-xs text-sky-600 hover:underline">🔄 รีเฟรช</button>
+              </div>
+              <div id="weather-content" class="text-sm"><p class="text-slate-400">กำลังโหลด...</p></div>
+            </div>
+            <div id="api-weather-results" class="mb-6 hidden">
+              <div class="bg-white rounded-2xl border border-sky-100 p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-semibold text-slate-800">📡 ข้อมูลจาก API ที่ตั้งค่า</h4>
+                  <button onclick="fetchConfiguredApis('weather')" class="text-xs text-sky-600 hover:underline">รีเฟรช</button>
+                </div>
+                <div id="api-weather-content" class="text-sm text-slate-600 space-y-2"></div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <a href="https://www.tmd.go.th" target="_blank" rel="noopener" class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm"><p class="font-medium text-slate-800 text-sm">กรมอุตุนิยมวิทยา</p><p class="text-xs text-slate-500 mt-0.5">พยากรณ์อากาศอย่างเป็นทางการ</p></a>
+              <a href="https://weather.bangkok.go.th" target="_blank" rel="noopener" class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm"><p class="font-medium text-slate-800 text-sm">สภาพอากาศ กทม.</p><p class="text-xs text-slate-500 mt-0.5">ฝนและอุณหภูมิกรุงเทพฯ</p></a>
+            </div>
+          </div>
+        </div>
+
+        <!-- ALERT -->
+        <div id="view-alert" class="hidden absolute inset-0 bg-slate-50 overflow-y-auto p-4 md:p-6">
+          <div class="max-w-6xl mx-auto">
+            <h3 class="text-lg md:text-xl font-bold text-slate-800 mb-1">เตือนภัย</h3>
+            <p class="text-slate-500 text-sm mb-4">ปภ. และหน่วยงานท้องถิ่น</p>
+
+            <div class="bg-rose-50 border border-rose-100 rounded-2xl p-4 mb-6">
+              <h4 class="font-semibold text-rose-800 mb-3 flex items-center gap-2">📞 สายด่วนฉุกเฉิน</h4>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                <a href="tel:1784" class="flex items-center gap-2 bg-white rounded-xl p-3 shadow-sm hover:shadow">
+                  <span class="font-bold text-rose-600 text-lg">1784</span>
+                  <span class="text-xs text-slate-600">ปภ. แจ้งเหตุภัยพิบัติ</span>
+                </a>
+                <a href="tel:1555" class="flex items-center gap-2 bg-white rounded-xl p-3 shadow-sm hover:shadow">
+                  <span class="font-bold text-rose-600 text-lg">1555</span>
+                  <span class="text-xs text-slate-600">กทม. สายด่วน</span>
+                </a>
+                <a href="tel:1669" class="flex items-center gap-2 bg-white rounded-xl p-3 shadow-sm hover:shadow">
+                  <span class="font-bold text-rose-600 text-lg">1669</span>
+                  <span class="text-xs text-slate-600">แพทย์ฉุกเฉิน</span>
+                </a>
+                <a href="tel:1460" class="flex items-center gap-2 bg-white rounded-xl p-3 shadow-sm hover:shadow">
+                  <span class="font-bold text-sky-600 text-lg">1460</span>
+                  <span class="text-xs text-slate-600">กรมชลประทาน</span>
+                </a>
+                <a href="tel:1182" class="flex items-center gap-2 bg-white rounded-xl p-3 shadow-sm hover:shadow">
+                  <span class="font-bold text-sky-600 text-lg">1182</span>
+                  <span class="text-xs text-slate-600">กรมอุตุนิยมวิทยา</span>
+                </a>
+                <a href="tel:191" class="flex items-center gap-2 bg-white rounded-xl p-3 shadow-sm hover:shadow">
+                  <span class="font-bold text-slate-700 text-lg">191</span>
+                  <span class="text-xs text-slate-600">ตำรวจ</span>
+                </a>
+              </div>
+              <p class="text-xs text-rose-600 mt-3">LINE ปภ.: <strong>@1784DDPM</strong> · Facebook: <strong>กรมป้องกันและบรรเทาสาธารณภัย DDPM</strong> · X: <strong>@DDPMNews</strong></p>
+            </div>
+
+            <div id="api-alert-results" class="mb-6 hidden">
+              <div class="bg-white rounded-2xl border border-rose-100 p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-semibold text-slate-800">📡 ข้อมูลจาก API ที่ตั้งค่า</h4>
+                  <button onclick="fetchConfiguredApis('alert')" class="text-xs text-rose-600 hover:underline">รีเฟรช</button>
+                </div>
+                <div id="api-alert-content" class="text-sm text-slate-600 space-y-2"></div>
+              </div>
+            </div>
+
+            <div class="space-y-6">
+              <!-- ปภ. -->
+              <section>
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="w-7 h-7 rounded-lg bg-rose-100 flex items-center justify-center text-rose-600 text-base">🛡️</div>
+                  <h4 class="font-semibold text-slate-800 text-sm md:text-base">กรมป้องกันและบรรเทาสาธารณภัย (ปภ.)</h4>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <a href="https://www.disaster.go.th" target="_blank" rel="noopener" class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex items-start gap-3">
+                    <span class="text-xl shrink-0">🏛️</span>
+                    <div class="min-w-0"><p class="font-medium text-slate-800 text-sm">เว็บไซต์หลัก ปภ.</p><p class="text-xs text-slate-500 mt-0.5">สถานการณ์สาธารณภัยทั่วประเทศ</p></div>
+                  </a>
+                  <a href="https://riskmap.disaster.go.th" target="_blank" rel="noopener" class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex items-start gap-3">
+                    <span class="text-xl shrink-0">🗺️</span>
+                    <div class="min-w-0"><p class="font-medium text-slate-800 text-sm">แผนที่ความเสี่ยงภัย</p><p class="text-xs text-slate-500 mt-0.5">Risk Map ประเทศไทย</p></div>
+                  </a>
+                  <a href="https://www.facebook.com/disaster.go.th" target="_blank" rel="noopener" class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex items-start gap-3">
+                    <span class="text-xl shrink-0">📘</span>
+                    <div class="min-w-0"><p class="font-medium text-slate-800 text-sm">Facebook ปภ.</p><p class="text-xs text-slate-500 mt-0.5">ประกาศเตือนภัยล่าสุด</p></div>
+                  </a>
+                  <a href="https://line.me/R/ti/p/@1784DDPM" target="_blank" rel="noopener" class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex items-start gap-3">
+                    <span class="text-xl shrink-0">💬</span>
+                    <div class="min-w-0"><p class="font-medium text-slate-800 text-sm">LINE Official ปภ.</p><p class="text-xs text-slate-500 mt-0.5">รับการแจ้งเตือนภัยอัตโนมัติ</p></div>
+                  </a>
+                </div>
+              </section>
+
+              <!-- กทม. หลายโดเมนเรียงลำดับ -->
+              <section>
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 text-base">🏢</div>
+                  <h4 class="font-semibold text-slate-800 text-sm md:text-base">หน่วยงานราชการฝ่ายปกครอง / อปท.</h4>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                  <!-- กรุงเทพมหานคร -->
+                  <a href="https://www.bangkok.go.th" target="_blank" rel="noopener" class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex items-start gap-3">
+                    <span class="text-xl shrink-0">🌆</span>
+                    <div class="min-w-0"><p class="font-medium text-slate-800 text-sm">กรุงเทพมหานคร</p><p class="text-xs text-slate-500 mt-0.5">ประกาศและแจ้งเตือนของ กทม.</p></div>
+                  </a>
+
+                  <!-- สำนักการระบายน้ำ -->
+                  <a href="https://dds.bangkok.go.th" target="_blank" rel="noopener" class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex items-start gap-3">
+                    <span class="text-xl shrink-0">💧</span>
+                    <div class="min-w-0"><p class="font-medium text-slate-800 text-sm">สำนักการระบายน้ำ กทม.</p><p class="text-xs text-slate-500 mt-0.5">หน่วยงานเจ้าของเรื่องน้ำท่วม</p></div>
+                  </a>
+
+                  <!-- กทม. จุดน้ำท่วม หลายโดเมนเรียงลำดับ -->
+                  <div class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
+                    <div class="flex items-start gap-3">
+                      <span class="text-xl shrink-0">🗺️</span>
+                      <div class="min-w-0 flex-1">
+                        <p class="font-medium text-slate-800 text-sm">กทม. - จุดน้ำท่วมขังเรียลไทม์</p>
+                        <p class="text-xs text-slate-500 mt-0.5">แผนที่ถนนน้ำท่วมเป็นรายจุด</p>
+                        <div class="mt-2 flex flex-wrap gap-1.5">
+                          <a href="https://weather.bangkok.go.th/Flood/" target="_blank" rel="noopener" class="src-link bg-teal-50 text-teal-700">1. weather.bangkok.go.th/Flood</a>
+                          <a href="https://dds.bangkok.go.th" target="_blank" rel="noopener" class="src-link bg-sky-50 text-sky-700">2. dds.bangkok.go.th</a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Traffy Fondue หลายโดเมนเรียงลำดับ -->
+                  <div class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
+                    <div class="flex items-start gap-3">
+                      <span class="text-xl shrink-0">📣</span>
+                      <div class="min-w-0 flex-1">
+                        <p class="font-medium text-slate-800 text-sm">Traffy Fondue - แจ้งเหตุน้ำท่วม</p>
+                        <p class="text-xs text-slate-500 mt-0.5">ช่องทางหลัก กทม. รับแจ้งเหตุจากประชาชน</p>
+                        <div class="mt-2 flex flex-wrap gap-1.5">
+                          <a href="https://fondue.bangkok.go.th" target="_blank" rel="noopener" class="src-link bg-teal-50 text-teal-700">1. fondue.bangkok.go.th</a>
+                          <a href="https://trafy.in.th" target="_blank" rel="noopener" class="src-link bg-sky-50 text-sky-700">2. trafy.in.th</a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- เมืองพัทยา -->
+                  <a href="https://www.pattaya.go.th" target="_blank" rel="noopener" class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex items-start gap-3">
+                    <span class="text-xl shrink-0">🏖️</span>
+                    <div class="min-w-0"><p class="font-medium text-slate-800 text-sm">เมืองพัทยา</p><p class="text-xs text-slate-500 mt-0.5">สถานการณ์ท้องถิ่น</p></div>
+                  </a>
+
+                  <div class="card-hover bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex items-start gap-3">
+                    <span class="text-xl shrink-0">📢</span>
+                    <div class="min-w-0"><p class="font-medium text-slate-800 text-sm">จังหวัด / อำเภอ / เทศบาล</p><p class="text-xs text-slate-500 mt-0.5">ติดตามประกาศจากหน่วยงานในพื้นที่</p></div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div id="view-settings" class="hidden absolute inset-0 bg-slate-50 overflow-y-auto p-4 md:p-6">
+          <div class="max-w-3xl mx-auto">
+            <div id="login-panel" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 md:p-8">
+              <div class="text-center mb-6">
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-3"><span class="text-2xl">🔒</span></div>
+                <h3 class="text-lg font-bold text-slate-800">เข้าสู่ระบบ Admin</h3>
+                <p class="text-sm text-slate-500 mt-1">เฉพาะผู้ดูแลระบบ</p>
+              </div>
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">รหัสผ่าน</label>
+                  <input type="password" id="admin-password" placeholder="กรอกรหัสผ่าน" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500" onkeydown="if(event.key==='Enter')loginAdmin()">
+                </div>
+                <button onclick="loginAdmin()" class="w-full py-2.5 bg-gradient-to-r from-teal-500 to-sky-500 text-white rounded-xl font-medium">เข้าสู่ระบบ</button>
+              </div>
+              <p class="text-xs text-slate-400 text-center mt-4">รหัสเริ่มต้น: admin123</p>
+            </div>
+
+            <div id="admin-panel" class="space-y-5 hidden">
+              <div class="flex justify-between items-center">
+                <div>
+                  <h3 class="text-lg md:text-xl font-bold text-slate-800">ตั้งค่าระบบ</h3>
+                  <p class="text-slate-500 text-sm">จัดการหน่วยงาน API และโทรมาตร</p>
+                </div>
+                <button onclick="logoutAdmin()" class="text-sm text-rose-600 hover:underline">ออกจากระบบ</button>
+              </div>
+
+              <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 md:p-5">
+                <div class="flex justify-between items-center mb-3">
+                  <h4 class="font-semibold text-slate-800">🏢 หน่วยงาน / องค์กร / บุคคล</h4>
+                  <button onclick="openAgencyModal()" class="flex items-center gap-1 px-3 py-1.5 bg-teal-500 text-white rounded-lg text-sm">➕ เพิ่ม</button>
+                </div>
+                <div id="agencies-list" class="space-y-2"></div>
+              </div>
+
+              <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 md:p-5">
+                <div class="flex justify-between items-center mb-3">
+                  <h4 class="font-semibold text-slate-800">🔌 API เชื่อมโยงหน่วยงาน</h4>
+                  <button onclick="openApiModal()" class="flex items-center gap-1 px-3 py-1.5 bg-indigo-500 text-white rounded-lg text-sm">➕ เพิ่ม API</button>
+                </div>
+                <div id="apis-list" class="space-y-2"><p class="text-sm text-slate-400 py-2">ยังไม่มี API</p></div>
+              </div>
+
+              <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 md:p-5">
+                <div class="flex justify-between items-center mb-3">
+                  <div>
+                    <h4 class="font-semibold text-slate-800">📡 สถานะโทรมาตร (Dual-Source)</h4>
+                    <p class="text-xs text-slate-500 mt-0.5">ThaiWater + กทม. สำนักการระบายน้ำ</p>
+                  </div>
+                  <button data-tele-load onclick="forceReloadTelemetry()" class="text-xs px-3 py-1.5 bg-indigo-500 text-white rounded-lg">บังคับโหลดใหม่</button>
+                </div>
+                <div id="tele-status-list" class="space-y-2 text-sm"></div>
+                <div class="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
+                  <p id="tele-total">จำนวนสถานีทั้งหมด: -</p>
+                  <p id="tele-last-update" class="mt-0.5">อัปเดตล่าสุด: -</p>
+                </div>
+              </div>
+
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <button onclick="document.getElementById('debug-modal').classList.remove('hidden'); runDebugTest();" class="w-full text-sm text-slate-700 hover:text-indigo-600 flex items-center justify-center gap-2 py-1">
+                  🐞 เปิด Debug Panel — ทดสอบ API ทั้งหมด
+                </button>
+              </div>
+
+              <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 md:p-5">
+                <h4 class="font-semibold text-slate-800 mb-1">🔑 เปลี่ยนรหัสผ่าน Admin</h4>
+                <button onclick="openChangePasswordModal()" class="mt-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-medium">เปลี่ยนรหัสผ่าน</button>
+              </div>
+
+              <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 md:p-5">
+                <h4 class="font-semibold text-slate-800 mb-1">📋 คัดลอกโค้ดโปรแกรม</h4>
+                <button onclick="copyFullCode()" class="mt-2 flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-slate-700 to-slate-900 text-white rounded-xl text-sm font-medium">
+                  <span id="copy-btn-text">คัดลอกโค้ดทั้งหมด</span>
+                </button>
+                <p class="text-xs text-slate-400 mt-2">หมายเหตุ: ต้องรันผ่าน http/https จึงจะคัดลอกโค้ดต้นฉบับได้เต็มรูปแบบ</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODALS -->
+  <div id="modal" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center modal-backdrop">
+    <div class="bg-white rounded-t-2xl md:rounded-2xl shadow-2xl w-full md:max-w-lg md:mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white">
+        <h3 id="modal-title" class="font-semibold text-slate-800">เพิ่มข้อมูล</h3>
+        <button onclick="closeModal()" class="text-slate-400 p-1">✕</button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">ประเภทข้อมูล</label>
+          <select id="form-type" class="w-full px-4 py-2.5 rounded-xl border border-slate-200">
+            <option value="flooded">พื้นที่น้ำท่วมขัง</option><option value="risk">พื้นที่เสี่ยงน้ำท่วม</option><option value="gates">ประตูระบายน้ำ</option>
+          </select>
+        </div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">ชื่อ / สถานที่</label>
+          <input type="text" id="form-name" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" placeholder="เช่น น้ำท่วมซอยรามคำแหง 24">
+        </div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">รายละเอียด</label>
+          <textarea id="form-desc" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" placeholder="ระดับน้ำ สภาพถนน ฯลฯ"></textarea>
+        </div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">ระดับความรุนแรง</label>
+          <select id="form-severity" class="w-full px-4 py-2.5 rounded-xl border border-slate-200">
+            <option value="1">1 - เล็กน้อย</option><option value="2">2 - ปานกลาง</option><option value="3" selected>3 - รุนแรง</option><option value="4">4 - วิกฤต</option><option value="5">5 - ฉุกเฉิน</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-sm font-medium text-slate-700 mb-1">ละติจูด</label><input type="number" step="any" id="form-lat" class="w-full px-4 py-2.5 rounded-xl border border-slate-200"></div>
+          <div><label class="block text-sm font-medium text-slate-700 mb-1">ลองจิจูด</label><input type="number" step="any" id="form-lng" class="w-full px-4 py-2.5 rounded-xl border border-slate-200"></div>
+        </div>
+        <button type="button" onclick="locateMe(true)" class="w-full px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm text-slate-700">📍 ใช้ตำแหน่งปัจจุบัน</button>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">แนบรูป <span class="text-xs text-slate-400 font-normal">(ย่อขนาดอัตโนมัติ)</span></label>
+          <input type="file" id="form-photo" accept="image/*" capture="environment" class="w-full text-sm text-slate-500">
+          <div id="photo-preview" class="mt-2 hidden"><img id="photo-preview-img" class="h-24 rounded-lg object-cover" alt="preview"></div>
+        </div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">ผู้รายงาน</label>
+          <input type="text" id="form-reporter" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" placeholder="ประชาชน / หน่วยงาน">
+        </div>
+      </div>
+      <div class="px-5 py-4 bg-slate-50 flex justify-end gap-3 sticky bottom-0">
+        <button onclick="closeModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-xl text-sm">ยกเลิก</button>
+        <button onclick="saveData()" class="px-5 py-2 bg-teal-500 text-white rounded-xl text-sm font-medium">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="agency-modal" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center modal-backdrop">
+    <div class="bg-white rounded-t-2xl md:rounded-2xl shadow-2xl w-full md:max-w-md md:mx-4">
+      <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
+        <h3 class="font-semibold text-slate-800">เพิ่มหน่วยงาน</h3>
+        <button onclick="closeAgencyModal()" class="text-slate-400 p-1">✕</button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">ชื่อ</label><input type="text" id="agency-name" class="w-full px-4 py-2.5 rounded-xl border border-slate-200"></div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">ประเภท</label>
+          <select id="agency-type" class="w-full px-4 py-2.5 rounded-xl border border-slate-200">
+            <option value="agency">หน่วยงานราชการ</option><option value="org">องค์กร / มูลนิธิ</option><option value="person">บุคคล</option>
+          </select>
+        </div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">ลิงก์</label><input type="text" id="agency-link" placeholder="https://..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200"></div>
+      </div>
+      <div class="px-5 py-4 bg-slate-50 flex justify-end gap-3">
+        <button onclick="closeAgencyModal()" class="px-4 py-2 text-slate-600 rounded-xl text-sm">ยกเลิก</button>
+        <button onclick="saveAgency()" class="px-5 py-2 bg-teal-500 text-white rounded-xl text-sm font-medium">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="api-modal" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center modal-backdrop">
+    <div class="bg-white rounded-t-2xl md:rounded-2xl shadow-2xl w-full md:max-w-lg md:mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white">
+        <h3 id="api-modal-title" class="font-semibold text-slate-800">เพิ่ม API</h3>
+        <button onclick="closeApiModal()" class="text-slate-400 p-1">✕</button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">ชื่อ API</label><input type="text" id="api-name" class="w-full px-4 py-2.5 rounded-xl border border-slate-200"></div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">Endpoint URL</label><input type="text" id="api-url" class="w-full px-4 py-2.5 rounded-xl border border-slate-200"></div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">API Key</label><input type="text" id="api-key" class="w-full px-4 py-2.5 rounded-xl border border-slate-200"></div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">ประเภทข้อมูล</label>
+          <select id="api-type" class="w-full px-4 py-2.5 rounded-xl border border-slate-200">
+            <option value="water">สถานการณ์น้ำ</option><option value="weather">สภาพอากาศ</option><option value="alert">เตือนภัย</option><option value="flood">น้ำท่วม</option><option value="other">อื่น ๆ</option>
+          </select>
+        </div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">หมายเหตุ</label><textarea id="api-note" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200"></textarea></div>
+      </div>
+      <div class="px-5 py-4 bg-slate-50 flex justify-end gap-3">
+        <button onclick="closeApiModal()" class="px-4 py-2 text-slate-600 rounded-xl text-sm">ยกเลิก</button>
+        <button onclick="saveApi()" class="px-5 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="password-modal" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center modal-backdrop">
+    <div class="bg-white rounded-t-2xl md:rounded-2xl shadow-2xl w-full md:max-w-md md:mx-4">
+      <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
+        <h3 class="font-semibold text-slate-800">เปลี่ยนรหัสผ่าน</h3>
+        <button onclick="closeChangePasswordModal()" class="text-slate-400 p-1">✕</button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">รหัสผ่านปัจจุบัน</label><input type="password" id="pw-current" class="w-full px-4 py-2.5 rounded-xl border border-slate-200"></div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">รหัสผ่านใหม่</label><input type="password" id="pw-new" class="w-full px-4 py-2.5 rounded-xl border border-slate-200"></div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">ยืนยันรหัสผ่านใหม่</label><input type="password" id="pw-confirm" class="w-full px-4 py-2.5 rounded-xl border border-slate-200"></div>
+      </div>
+      <div class="px-5 py-4 bg-slate-50 flex justify-end gap-3">
+        <button onclick="closeChangePasswordModal()" class="px-4 py-2 text-slate-600 rounded-xl text-sm">ยกเลิก</button>
+        <button onclick="changePassword()" class="px-5 py-2 bg-amber-500 text-white rounded-xl text-sm font-medium">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="debug-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white">
+        <h3 class="font-semibold text-slate-800">🐞 Debug: ทดสอบ API</h3>
+        <button onclick="document.getElementById('debug-modal').classList.add('hidden')" class="text-slate-400 p-1">✕</button>
+      </div>
+      <div class="p-5 space-y-3">
+        <p class="text-sm text-slate-600">ทดสอบยิง request ไปยัง endpoint ต่างๆ เพื่อตรวจว่าตัวไหนใช้ได้</p>
+        <div id="debug-results" class="space-y-2 text-xs font-mono"></div>
+      </div>
+      <div class="px-5 py-4 bg-slate-50 flex justify-end gap-3">
+        <button onclick="runDebugTest()" id="btn-debug-run" class="px-5 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium">เริ่มทดสอบ</button>
+      </div>
+    </div>
+  </div>
+<script>
+    // ============================================================
+    // Global state
+    // ============================================================
+    let map = null;
+    let markers = { flooded: [], risk: [], gates: [], tele: [] };
+    let layersVisible = { flooded: true, risk: true, gates: true, tele: true };
+    let currentView = 'map';
+    let editingId = null;
+    let isAdmin = false;
+    let clickLatLng = null;
+    let editingApiId = null;
+
+    // ============================================================
+    // Utility helpers
+    // ============================================================
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    function safeSetItem(key, value) {
+      try {
+        localStorage.setItem(key, value);
+        return true;
+      } catch (e) {
+        if (e && (e.name === 'QuotaExceededError' || e.code === 22 || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+          alert('หน่วยความจำเบราว์เซอร์เต็ม\nกรุณาลบข้อมูลหรือรูปภาพบางส่วนออกก่อนบันทึก');
+          return false;
+        }
+        console.warn('localStorage error:', e);
+        return false;
+      }
+    }
+
+    function safeLucide() {
+      try {
+        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+      } catch (e) { console.warn('lucide:', e); }
+    }
+
+    // ตรวจว่าผู้รายงานเป็นหน่วยงานราชการหรือไม่ (แสดง 🏛️)
+    function isGovReporter(reporter) {
+      return /กทม\.|กรมชลประทาน|ปภ\.|สทนช\.|ThaiWater|BMA|สำนักการระบายน้ำ/.test(String(reporter || ''));
+    }
+
+    function govBadge(reporter) {
+      return isGovReporter(reporter) ? '<span class="gov-badge" title="ข้อมูลจากหน่วยงานราชการ">🏛️</span> ' : '';
+    }
+
+    function resizeImage(file, maxDim = 800, quality = 0.7) {
+      return new Promise((resolve, reject) => {
+        if (!file) return resolve(null);
+        if (!file.type.startsWith('image/')) return reject(new Error('ไฟล์ต้องเป็นรูปภาพ'));
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('อ่านไฟล์ไม่สำเร็จ'));
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('โหลดรูปไม่สำเร็จ'));
+          img.onload = () => {
+            let { width, height } = img;
+            if (width > height && width > maxDim) {
+              height = Math.round(height * maxDim / width);
+              width = maxDim;
+            } else if (height > maxDim) {
+              width = Math.round(width * maxDim / height);
+              height = maxDim;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            try { resolve(canvas.toDataURL('image/jpeg', quality)); }
+            catch (err) { reject(err); }
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function getAdminPassword() { return localStorage.getItem('thaiflood_admin_pw') || 'admin123'; }
+    function setAdminPassword(pw) { safeSetItem('thaiflood_admin_pw', pw); }
+
+    // ============================================================
+    // Default data
+    // ============================================================
+    const defaultData = {
+      flooded: [
+        // เดิม
+        { id: 1,   name: "น้ำท่วมซอยรามคำแหง 24",                   desc: "ระดับน้ำประมาณ 30 ซม. รถเก๋งผ่านไม่ได้",                      lat: 13.7595, lng: 100.6268, reporter: "ประชาชน",                 severity: 3, status: "approved", createdAt: Date.now()-86400000,  time: "2026-09-28 14:30" },
+        { id: 2,   name: "ถนนพหลโยธิน ช่วงรังสิต",                  desc: "น้ำท่วมขังหลังฝนตกหนัก",                                       lat: 13.9889, lng: 100.6175, reporter: "ประชาชน",                 severity: 2, status: "approved", createdAt: Date.now()-172800000, time: "2026-09-27 09:15" },
+        // กทม. อ้างอิงหน่วยงาน (เดิม)
+        { id: 101, name: "ถนนพระราม 2 (บางขุนเทียน)",                desc: "จุดเฝ้าระวังน้ำท่วมขังซ้ำซาก · กทม.",                          lat: 13.6590, lng: 100.4350, reporter: "กทม. สำนักการระบายน้ำ",    severity: 3, status: "approved", createdAt: Date.now()-3600000,   time: "อ้างอิงหน่วยงาน" },
+        { id: 102, name: "ถนนเพชรเกษม (บางแค)",                    desc: "จุดเสี่ยงน้ำท่วมขัง · เฝ้าระวังช่วงฝนหนัก",                    lat: 13.7120, lng: 100.3980, reporter: "กทม. สำนักการระบายน้ำ",    severity: 2, status: "approved", createdAt: Date.now()-7200000,   time: "อ้างอิงหน่วยงาน" },
+        { id: 103, name: "ถนนลาดพร้าว (วังทองหลาง)",                desc: "จุดเฝ้าระวังน้ำท่วมขังในเขตเมือง",                            lat: 13.7860, lng: 100.6050, reporter: "กทม.",                     severity: 2, status: "approved", createdAt: Date.now()-5400000,   time: "อ้างอิงหน่วยงาน" },
+        { id: 104, name: "ถนนสุขุมวิท (บางนา)",                     desc: "จุดเสี่ยงน้ำท่วมขังฝั่งตะวันออก",                            lat: 13.6680, lng: 100.6040, reporter: "กทม.",                     severity: 3, status: "approved", createdAt: Date.now()-9000000,   time: "อ้างอิงหน่วยงาน" },
+        { id: 105, name: "อ.บางบาล จ.พระนครศรีอยุธยา",              desc: "พื้นที่ลุ่มน้ำเจ้าพระยา · เฝ้าระวังน้ำล้นตลิ่ง",                lat: 14.3200, lng: 100.4700, reporter: "ปภ. / สทนช.",              severity: 4, status: "approved", createdAt: Date.now()-10800000,  time: "อ้างอิงหน่วยงาน" },
+        { id: 106, name: "อ.เมืองนครสวรรค์ (แม่น้ำเจ้าพระยา)",       desc: "จุดเฝ้าระวังระดับน้ำ · กรมชลประทาน/ปภ.",                      lat: 15.7040, lng: 100.1200, reporter: "ปภ. / กรมชลประทาน",       severity: 3, status: "approved", createdAt: Date.now()-14400000,  time: "อ้างอิงหน่วยงาน" },
+        // ⭐ เพิ่มใหม่: จุดน้ำท่วมซ้ำซาก กทม. (ครบ 2 ฝั่ง)
+        { id: 107, name: "แยกอโศก-ดินแดง",                          desc: "จุดน้ำท่วมซ้ำซาก · คลองแสนแสบ · ฝั่งตะวันออก",                lat: 13.7370, lng: 100.5610, reporter: "กทม.",                     severity: 3, status: "approved", createdAt: Date.now()-1800000,   time: "อ้างอิงหน่วยงาน" },
+        { id: 108, name: "ถนนวิภาวดี-รังสิต (หลักสี่)",                desc: "ลุ่มต่ำน้ำเหนือ · เฝ้าระวังช่วงน้ำหลาก",                      lat: 13.8870, lng: 100.5790, reporter: "กทม.",                     severity: 3, status: "approved", createdAt: Date.now()-2400000,   time: "อ้างอิงหน่วยงาน" },
+        { id: 109, name: "แยกบางกะปิ",                              desc: "คลองแสนแสบล้นตลิ่ง · น้ำท่วมขังบ่อย",                         lat: 13.7650, lng: 100.6400, reporter: "กทม.",                     severity: 3, status: "approved", createdAt: Date.now()-3000000,   time: "อ้างอิงหน่วยงาน" },
+        { id: 110, name: "ถนนศรีนครินทร์ (สำโรง)",                   desc: "รอยต่อ กทม.-สมุทรปราการ · น้ำท่วมขังสูง",                    lat: 13.6850, lng: 100.6050, reporter: "กทม.",                     severity: 3, status: "approved", createdAt: Date.now()-4500000,   time: "อ้างอิงหน่วยงาน" },
+        { id: 111, name: "ถนนแจ้งวัฒนะ",                            desc: "คลองประปาล้น · เฝ้าระวังช่วงฝนหนัก",                         lat: 13.8930, lng: 100.5610, reporter: "กทม.",                     severity: 2, status: "approved", createdAt: Date.now()-6000000,   time: "อ้างอิงหน่วยงาน" },
+        { id: 112, name: "ถนนรามอินทรา",                            desc: "ฝั่งตะวันออก · ระบายน้ำช้า",                                 lat: 13.7950, lng: 100.6800, reporter: "กทม.",                     severity: 2, status: "approved", createdAt: Date.now()-7500000,   time: "อ้างอิงหน่วยงาน" },
+        { id: 113, name: "ถนนสุขสวัสดิ์",                            desc: "ฝั่งตะวันตก · จุดเฝ้าระวังน้ำขึ้น",                            lat: 13.6610, lng: 100.4760, reporter: "กทม.",                     severity: 3, status: "approved", createdAt: Date.now()-9000000,   time: "อ้างอิงหน่วยงาน" },
+        { id: 114, name: "ถนนพญาไท",                                desc: "ชุมชนหนาแน่น · ระบายน้ำช้า",                                 lat: 13.7500, lng: 100.5330, reporter: "กทม.",                     severity: 2, status: "approved", createdAt: Date.now()-10500000,  time: "อ้างอิงหน่วยงาน" }
+      ],
+      risk: [
+        { id: 3,   name: "พื้นที่ลุ่มต่ำ อ.บางบาล อยุธยา",           desc: "เสี่ยงน้ำล้นตลิ่งจากแม่น้ำเจ้าพระยา",                           lat: 14.3167, lng: 100.4667, reporter: "สทนช.",                    severity: 4, status: "approved", createdAt: Date.now()-86400000,  time: "2026-09-26" },
+        { id: 201, name: "ลุ่มน้ำเจ้าพระยาตอนล่าง (นนทบุรี)",        desc: "พื้นที่เสี่ยงน้ำท่วมซ้ำซาก",                                    lat: 13.8600, lng: 100.4800, reporter: "ปภ.",                      severity: 3, status: "approved", createdAt: Date.now()-172800000, time: "อ้างอิงหน่วยงาน" },
+        { id: 202, name: "พื้นที่ลุ่มต่ำ จ.ปทุมธานี",                 desc: "เสี่ยงน้ำท่วมขังและน้ำล้นตลิ่ง",                                lat: 14.0200, lng: 100.5300, reporter: "ปภ.",                      severity: 3, status: "approved", createdAt: Date.now()-200000000, time: "อ้างอิงหน่วยงาน" }
+      ],
+      gates: [
+        { id: 4,   name: "ประตูระบายน้ำคลองแสนแสบ",                desc: "ควบคุมระดับน้ำฝั่งตะวันออก กทม.",                             lat: 13.7800, lng: 100.6500, reporter: "กทม.",                     status: "approved", createdAt: Date.now(), time: "อ้างอิงหน่วยงาน" },
+        { id: 301, name: "ประตูระบายน้ำคลองลัดโพธิ์",                desc: "โครงการพระราชดำริ · กรมชลประทาน",                            lat: 13.6550, lng: 100.5400, reporter: "กรมชลประทาน",              status: "approved", createdAt: Date.now(), time: "อ้างอิงหน่วยงาน" },
+        { id: 302, name: "เขื่อนเจ้าพระยา (ประตูระบาย)",              desc: "ควบคุมการระบายน้ำลุ่มเจ้าพระยา · ชัยนาท",                     lat: 15.1800, lng: 100.1400, reporter: "กรมชลประทาน",              status: "approved", createdAt: Date.now(), time: "อ้างอิงหน่วยงาน" },
+        { id: 303, name: "ประตูระบายน้ำคลองภาษีเจริญ",              desc: "ระบบระบายน้ำฝั่งตะวันตก กทม.",                                lat: 13.7200, lng: 100.4500, reporter: "กทม.",                     status: "approved", createdAt: Date.now(), time: "อ้างอิงหน่วยงาน" },
+        { id: 304, name: "ประตูระบายน้ำคลองประปา",                  desc: "ควบคุมระดับน้ำคลองประปา",                                    lat: 13.8100, lng: 100.5200, reporter: "กทม.",                     status: "approved", createdAt: Date.now(), time: "อ้างอิงหน่วยงาน" },
+        { id: 305, name: "ประตูระบายน้ำคลองบางเขน",                 desc: "ระบบระบายน้ำเขตบางเขน",                                      lat: 13.8700, lng: 100.6000, reporter: "กทม.",                     status: "approved", createdAt: Date.now(), time: "อ้างอิงหน่วยงาน" },
+        { id: 306, name: "ประตูระบายน้ำคลองลาดพร้าว",               desc: "ควบคุมน้ำคลองลาดพร้าว",                                       lat: 13.8200, lng: 100.6100, reporter: "กทม.",                     status: "approved", createdAt: Date.now(), time: "อ้างอิงหน่วยงาน" },
+        { id: 307, name: "ประตูระบายน้ำแม่น้ำท่าจีน",                desc: "ควบคุมระดับน้ำลุ่มท่าจีน",                                     lat: 13.5500, lng: 100.2700, reporter: "กรมชลประทาน",              status: "approved", createdAt: Date.now(), time: "อ้างอิงหน่วยงาน" }
+      ],
+      tele: [],
+      _v: 1
+    };
+
+    let data = (() => {
+      try {
+        const raw = localStorage.getItem('thaiflood_data');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (typeof parsed._v !== 'number') parsed._v = 1;
+          return parsed;
+        }
+        return JSON.parse(JSON.stringify(defaultData));
+      } catch { return JSON.parse(JSON.stringify(defaultData)); }
+    })();
+
+    (function mergeOfficialPoints() {
+      let changed = false;
+      ['flooded','risk','gates','tele'].forEach(type => {
+        if (!data[type]) { data[type] = []; changed = true; }
+        const ids = new Set(data[type].map(i => i.id));
+        (defaultData[type] || []).forEach(item => {
+          if (!ids.has(item.id)) { data[type].push(item); changed = true; }
+        });
+      });
+      if (changed) {
+        data._v = (data._v || 0) + 1;
+        safeSetItem('thaiflood_data', JSON.stringify(data));
+      }
+    })();
+
+    let agencies = (() => {
+      try {
+        const raw = localStorage.getItem('thaiflood_agencies');
+        return raw ? JSON.parse(raw) : [
+          { id: 1, name: "สทนช.", type: "agency", link: "https://www.onwr.go.th" },
+          { id: 2, name: "กรมชลประทาน", type: "agency", link: "https://www.rid.go.th" },
+          { id: 3, name: "กรมอุตุนิยมวิทยา", type: "agency", link: "https://www.tmd.go.th" },
+          { id: 4, name: "กรุงเทพมหานคร", type: "agency", link: "https://www.bangkok.go.th" }
+        ];
+      } catch { return []; }
+    })();
+
+    let apis = (() => {
+      try {
+        const raw = localStorage.getItem('thaiflood_apis');
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    })();
+
+    // ============================================================
+    // Bootstrap
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', () => {
+      const oldToast = document.getElementById('toast');
+      if (oldToast) oldToast.remove();
+      safeLucide();
+
+      try {
+        if (typeof L === 'undefined') throw new Error('Leaflet (L) โหลดไม่สำเร็จ — ตรวจสอบการเชื่อมต่อ CDN');
+        initMap();
+      } catch (e) {
+        console.error('initMap failed:', e);
+        const el = document.getElementById('map');
+        if (el) {
+          el.innerHTML = '<div style="padding:24px;color:#dc2626;font-family:Sarabun,sans-serif;font-size:14px;line-height:1.6">' +
+            '⚠️ ไม่สามารถเริ่มแผนที่ได้<br><span style="color:#64748b;font-size:12px">' +
+            escapeHtml(e.message || String(e)) +
+            '</span></div>';
+        }
+      }
+
+      try { checkAdminStatus(); } catch (e) { console.warn('checkAdminStatus:', e); }
+      try { switchView('map'); } catch (e) { console.warn('switchView:', e); }
+      try { refreshAllData(false); } catch (e) { console.warn('refreshAllData:', e); }
+
+      setInterval(() => { try { refreshAllData(false); } catch (e) {} }, 5 * 60 * 1000);
+    });
+
+    window.addEventListener('load', () => {
+      try { if (map) map.invalidateSize(); } catch (e) {}
+      safeLucide();
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        try { refreshAllData(false); } catch (e) {}
+        try { if (map) map.invalidateSize(); } catch (e) {}
+      }
+    });
+
+    window.addEventListener('beforeunload', () => localStorage.setItem('thaiflood_last_close', String(Date.now())));
+
+    // ============================================================
+    // Refresh all — แก้ race condition ด้วย _v (version stamp)
+    // ============================================================
+    async function refreshAllData(showMsg) {
+      const icon = document.getElementById('refresh-icon');
+      if (icon) icon.classList.add('animate-spin');
+      try {
+        if (typeof purgeExpired === 'function') purgeExpired();
+
+        // โหลด fresh เฉพาะเมื่อเวอร์ชันใน localStorage ใหม่กว่า in-memory
+        try {
+          const fresh = JSON.parse(localStorage.getItem('thaiflood_data'));
+          if (fresh && (fresh._v || 0) > (data._v || 0)) {
+            data = fresh;
+          }
+        } catch (e) {}
+
+        renderMarkers();
+        if (['flooded','risk','gates'].includes(currentView)) renderList(currentView);
+
+        const cache = JSON.parse(localStorage.getItem('thaiflood_tele_cache') || '{}');
+        const ageMin = (Date.now() - (cache.lastFetch || 0)) / 60000;
+        const shouldReloadTele = !cache.lastFetch || ageMin > 10 || showMsg;
+
+        await Promise.allSettled([
+          typeof fetchWeather === 'function' ? fetchWeather() : Promise.resolve(),
+          typeof fetchRidDams === 'function' ? fetchRidDams() : Promise.resolve(),
+          shouldReloadTele ? loadTelemetryStations(false) : Promise.resolve()
+        ]);
+
+        localStorage.setItem('thaiflood_last_refresh', String(Date.now()));
+        if (showMsg) {
+          if (shouldReloadTele) showToast('อัปเดตข้อมูลเรียบร้อยแล้ว');
+          else showToast('อัปเดตข้อมูล (ใช้แคชโทรมาตร — ' + Math.round(ageMin) + ' นาทีที่แล้ว)');
+        }
+      } catch (e) {
+        if (showMsg) showToast('อัปเดตบางส่วนไม่สำเร็จ');
+        console.warn(e);
+      } finally {
+        if (icon) setTimeout(() => { icon.classList.remove('animate-spin'); safeLucide(); }, 600);
+      }
+    }
+
+    // ============================================================
+    // Sidebar
+    // ============================================================
+    function openSidebar() {
+      document.getElementById('sidebar').classList.add('open');
+      document.getElementById('sidebar-overlay').classList.add('show');
+    }
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebar-overlay').classList.remove('show');
+    }
+
+    // ============================================================
+    // Map
+    // ============================================================
+    function initMap() {
+      if (typeof L === 'undefined') throw new Error('Leaflet (L) ยังไม่ถูกโหลด');
+      const el = document.getElementById('map');
+      if (!el) throw new Error('ไม่พบ element #map');
+      if (el.offsetHeight === 0) el.style.minHeight = 'calc(100vh - 3.5rem)';
+
+      map = L.map(el, { zoomControl: false }).setView([13.7563, 100.5018], 6);
+      L.control.zoom({ position: 'topright' }).addTo(map);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 19
+      }).addTo(map);
+
+      map.on('click', (e) => {
+        clickLatLng = e.latlng;
+        const modal = document.getElementById('modal');
+        if (modal && !modal.classList.contains('hidden')) {
+          document.getElementById('form-lat').value = e.latlng.lat.toFixed(5);
+          document.getElementById('form-lng').value = e.latlng.lng.toFixed(5);
+        }
+      });
+
+      setTimeout(() => { try { map.invalidateSize(); } catch (e) {} }, 300);
+    }
+
+    function renderMarkers() {
+      if (!map) return;
+      Object.keys(markers).forEach(t => { markers[t].forEach(m => { try { map.removeLayer(m); } catch (e) {} }); markers[t] = []; });
+      const baseColors = { flooded: '#3b82f6', risk: '#f59e0b', gates: '#0284c7', tele: '#7c3aed' };
+      const severityColors = { 1: '#94a3b8', 2: '#38bdf8', 3: '#3b82f6', 4: '#f59e0b', 5: '#ef4444' };
+
+      ['flooded', 'risk', 'gates', 'tele'].forEach(type => {
+        if (!data[type]) data[type] = [];
+        if (!layersVisible[type]) return;
+        data[type].forEach(item => {
+          if (!isAdmin && item.status === 'rejected') return;
+          if (!isAdmin && item.status === 'pending') return;
+          const sev = item.severity || 3;
+          const color = type === 'flooded' ? (severityColors[sev] || baseColors[type]) : baseColors[type];
+          const radius = type === 'tele' ? 6 : (7 + (sev * 1.5));
+          // ปรับ weight ให้ marker ของหน่วยงานราชการเด่นขึ้น
+          const isGov = isGovReporter(item.reporter);
+          const weight = isGov ? 3 : 2;
+
+          const marker = L.circleMarker([item.lat, item.lng], {
+            radius, fillColor: color, color: '#fff', weight, opacity: 1, fillOpacity: 0.85
+          }).addTo(map);
+
+          const ageHours = item.createdAt ? Math.round((Date.now() - item.createdAt) / 3600000) : null;
+          const ageText = ageHours !== null ? (ageHours < 24 ? ageHours + ' ชม.ที่แล้ว' : Math.round(ageHours / 24) + ' วันที่แล้ว') : (item.time || '');
+          const sevLabel = ['', 'เล็กน้อย', 'ปานกลาง', 'รุนแรง', 'วิกฤต', 'ฉุกเฉิน'][sev] || '';
+          const statusBadge = item.status === 'pending'
+            ? '<span class="text-amber-600 text-xs">รอตรวจสอบ</span>'
+            : item.status === 'approved'
+              ? '<span class="text-teal-600 text-xs">ยืนยันแล้ว</span>'
+              : '';
+
+          // ซ่อนปุ่ม edit/delete จาก non-admin (ยกเว้น tele)
+          const actionHtml = (type === 'tele' || !isAdmin) ? '' : `
+              <div class="flex gap-2 mt-2 flex-wrap">
+                <button onclick="editItem('${type}', ${item.id})" class="text-xs px-2 py-1 bg-teal-50 text-teal-700 rounded">แก้ไข</button>
+                <button onclick="deleteItem('${type}', ${item.id})" class="text-xs px-2 py-1 bg-rose-50 text-rose-700 rounded">ลบ</button>
+                ${item.status === 'pending'
+                  ? `<button onclick="moderateItem('${type}', ${item.id}, 'approved')" class="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 rounded">อนุมัติ</button>
+                     <button onclick="moderateItem('${type}', ${item.id}, 'rejected')" class="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded">ปฏิเสธ</button>`
+                  : ''}
+              </div>`;
+
+          marker.bindPopup(`
+            <div class="p-1 min-w-[200px]">
+              <p class="font-semibold text-slate-800">${govBadge(item.reporter)}${escapeHtml(item.name)}</p>
+              <p class="text-xs mt-0.5"><span class="font-medium">ความรุนแรง ${sev}</span> (${escapeHtml(sevLabel)}) ${statusBadge}</p>
+              <p class="text-sm text-slate-600 mt-1">${escapeHtml(item.desc || '-')}</p>
+              ${item.photo ? `<img src="${item.photo}" class="mt-2 rounded-lg max-h-32 w-full object-cover">` : ''}
+              <p class="text-xs text-slate-400 mt-2">${escapeHtml(item.reporter || '-')} · ${escapeHtml(ageText)}</p>
+              ${actionHtml}
+            </div>
+          `);
+          markers[type].push(marker);
+        });
+      });
+    }
+
+    function moderateItem(type, id, status) {
+      const idx = data[type].findIndex(i => i.id === id);
+      if (idx > -1) {
+        data[type][idx].status = status;
+        data._v = (data._v || 0) + 1;
+        safeSetItem('thaiflood_data', JSON.stringify(data));
+        renderMarkers();
+        if (['flooded','risk','gates'].includes(currentView)) renderList(currentView);
+        showToast(status === 'approved' ? 'อนุมัติแล้ว' : 'ปฏิเสธแล้ว');
+      }
+    }
+
+    function toggleLayer(type) {
+      layersVisible[type] = !layersVisible[type];
+      const btn = document.getElementById('btn-' + type);
+      if (btn) btn.classList.toggle('active');
+      renderMarkers();
+    }
+
+    // ============================================================
+    // View switching
+    // ============================================================
+    function switchView(view) {
+      currentView = view;
+      closeSidebar();
+
+      document.querySelectorAll('.sidebar-item').forEach(el => {
+        el.classList.remove('active');
+        if (el.dataset.view === view) el.classList.add('active');
+      });
+
+      ['map','list','situation','weather','alert','settings'].forEach(v => {
+        const el = document.getElementById('view-' + v);
+        if (el) el.classList.add('hidden');
+      });
+
+      const titles = { map: 'แผนที่หลัก', flooded: 'พื้นที่น้ำท่วมขัง', risk: 'พื้นที่เสี่ยงน้ำท่วม',
+        gates: 'ประตูระบายน้ำ', situation: 'สถานการณ์น้ำ', weather: 'วิเคราะห์สภาพอากาศ',
+        alert: 'เตือนภัย', settings: 'ตั้งค่า (Admin)' };
+      document.getElementById('page-title').textContent = titles[view] || view;
+
+      const lt = document.getElementById('layer-toggles');
+      const ba = document.getElementById('btn-add');
+
+      if (lt) { lt.classList.add('hidden'); lt.classList.remove('md:flex'); }
+
+      if (view === 'map') {
+        document.getElementById('view-map').classList.remove('hidden');
+        if (lt) lt.classList.add('md:flex');
+        if (ba) ba.classList.remove('hidden');
+        setTimeout(() => { try { if (map) map.invalidateSize(); } catch (e) {} }, 150);
+      } else if (['flooded','risk','gates'].includes(view)) {
+        if (ba) ba.classList.remove('hidden');
+        document.getElementById('view-list').classList.remove('hidden');
+        renderList(view);
+      } else if (view === 'situation') {
+        if (ba) ba.classList.add('hidden');
+        document.getElementById('view-situation').classList.remove('hidden');
+        fetchRidDams(); fetchConfiguredApis('water');
+      } else if (view === 'weather') {
+        if (ba) ba.classList.add('hidden');
+        document.getElementById('view-weather').classList.remove('hidden');
+        fetchWeather(); fetchConfiguredApis('weather');
+      } else if (view === 'alert') {
+        if (ba) ba.classList.add('hidden');
+        document.getElementById('view-alert').classList.remove('hidden');
+        fetchConfiguredApis('alert');
+      } else if (view === 'settings') {
+        if (ba) ba.classList.add('hidden');
+        document.getElementById('view-settings').classList.remove('hidden');
+        if (isAdmin) { renderAgencies(); renderApis(); renderTelemetryStatus(); }
+      }
+
+      safeLucide();
+    }
+
+    function renderList(type) {
+      const titles = { flooded: 'พื้นที่น้ำท่วมขัง', risk: 'พื้นที่เสี่ยงน้ำท่วม', gates: 'ประตูระบายน้ำ' };
+      document.getElementById('list-title').textContent = titles[type];
+      const container = document.getElementById('list-container');
+      const items = data[type] || [];
+      if (!items.length) { container.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">ยังไม่มีข้อมูล</div>'; return; }
+      const visible = isAdmin ? items : items.filter(i => !i.status || i.status === 'approved');
+      if (!visible.length) { container.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">ยังไม่มีข้อมูลที่ยืนยันแล้ว</div>'; return; }
+      const showSeverity = type !== 'gates';
+      container.innerHTML = visible.map(item => {
+        const sev = item.severity || 3;
+        const sevColors = { 1:'bg-slate-100 text-slate-600', 2:'bg-sky-100 text-sky-700', 3:'bg-blue-100 text-blue-700', 4:'bg-amber-100 text-amber-700', 5:'bg-rose-100 text-rose-700' };
+        const ageHours = item.createdAt ? Math.round((Date.now() - item.createdAt) / 3600000) : null;
+        const ageText = ageHours !== null ? (ageHours < 24 ? ageHours + ' ชม.' : Math.round(ageHours / 24) + ' วัน') : '';
+
+        // ซ่อนปุ่ม edit/delete จาก non-admin
+        const actionHtml = isAdmin ? `
+          <div class="flex gap-1 shrink-0">
+            <button onclick="editItem('${type}', ${item.id})" class="p-1.5 text-slate-400 hover:text-teal-600 rounded-lg">✏️</button>
+            <button onclick="deleteItem('${type}', ${item.id})" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg">🗑️</button>
+          </div>` : '';
+
+        return `
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 card-hover transition">
+          <div class="flex justify-between items-start gap-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h4 class="font-semibold text-slate-800 text-sm">${govBadge(item.reporter)}${escapeHtml(item.name)}</h4>
+                ${showSeverity ? `<span class="text-[10px] px-1.5 py-0.5 rounded-full ${sevColors[sev] || ''}">ระดับ ${sev}</span>` : ''}
+              </div>
+              <p class="text-xs text-slate-500 mt-1 line-clamp-2">${escapeHtml(item.desc || '-')}</p>
+            </div>
+            ${actionHtml}
+          </div>
+          <div class="mt-2 pt-2 border-t border-slate-50 flex justify-between text-xs text-slate-400">
+            <span>${escapeHtml(item.reporter || '-')}</span><span>${escapeHtml(ageText || item.time || '')}</span>
+          </div>
+          <button onclick="focusMarker(${item.lat}, ${item.lng})" class="mt-2 text-xs text-teal-600 hover:underline">ดูบนแผนที่ →</button>
+        </div>`;
+      }).join('');
+      safeLucide();
+    }
+
+    function focusMarker(lat, lng) {
+      switchView('map');
+      setTimeout(() => { try { if (map) map.setView([lat, lng], 14); } catch (e) {} }, 200);
+    }
+
+    // ============================================================
+    // Add / Edit / Delete items
+    // ============================================================
+    function openAddModal(preType) {
+      editingId = null;
+      document.getElementById('modal-title').textContent = 'เพิ่มข้อมูล';
+      document.getElementById('form-type').value = preType || (['flooded','risk','gates'].includes(currentView) ? currentView : 'flooded');
+      ['form-name','form-desc','form-reporter','form-photo'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('form-severity').value = '3';
+      document.getElementById('form-lat').value = clickLatLng ? clickLatLng.lat.toFixed(5) : '';
+      document.getElementById('form-lng').value = clickLatLng ? clickLatLng.lng.toFixed(5) : '';
+      const preview = document.getElementById('photo-preview');
+      const previewImg = document.getElementById('photo-preview-img');
+      preview.classList.add('hidden');
+      previewImg.removeAttribute('src');
+      document.getElementById('modal').classList.remove('hidden');
+      safeLucide();
+    }
+    function closeModal() {
+      document.getElementById('modal').classList.add('hidden');
+      editingId = null;
+    }
+
+    document.addEventListener('change', async (e) => {
+      if (e.target.id === 'form-photo' && e.target.files && e.target.files[0]) {
+        const preview = document.getElementById('photo-preview');
+        const previewImg = document.getElementById('photo-preview-img');
+        try {
+          const resized = await resizeImage(e.target.files[0], 800, 0.7);
+          if (resized) {
+            previewImg.src = resized;
+            preview.classList.remove('hidden');
+          }
+        } catch (err) {
+          alert('ไม่สามารถประมวลผลรูปได้: ' + err.message);
+          e.target.value = '';
+          preview.classList.add('hidden');
+          previewImg.removeAttribute('src');
+        }
+      }
+    });
+
+    function saveData() {
+      const type = document.getElementById('form-type').value;
+      const name = document.getElementById('form-name').value.trim();
+      const desc = document.getElementById('form-desc').value.trim();
+      const severity = parseInt(document.getElementById('form-severity').value) || 3;
+      const lat = parseFloat(document.getElementById('form-lat').value);
+      const lng = parseFloat(document.getElementById('form-lng').value);
+      const reporter = document.getElementById('form-reporter').value.trim() || 'ประชาชน';
+      if (!name || isNaN(lat) || isNaN(lng)) return alert('กรุณากรอกชื่อและพิกัดให้ครบ');
+
+      const previewEl = document.getElementById('photo-preview');
+      const previewImg = document.getElementById('photo-preview-img');
+      const newPhoto = (!previewEl.classList.contains('hidden') && previewImg.getAttribute('src')) ? previewImg.src : null;
+      const now = Date.now();
+
+      if (editingId) {
+        const idx = data[type].findIndex(i => i.id === editingId);
+        if (idx > -1) {
+          data[type][idx] = {
+            ...data[type][idx],
+            name, desc, severity, lat, lng, reporter,
+            photo: newPhoto || data[type][idx].photo
+          };
+        }
+      } else {
+        data[type].push({
+          id: now, name, desc, severity, lat, lng, reporter,
+          photo: newPhoto,
+          time: new Date().toLocaleString('th-TH'),
+          createdAt: now,
+          status: 'pending',
+          expiresAt: now + (7 * 24 * 60 * 60 * 1000)
+        });
+      }
+      data._v = (data._v || 0) + 1;
+      if (!safeSetItem('thaiflood_data', JSON.stringify(data))) return;
+      closeModal();
+      renderMarkers();
+      if (['flooded','risk','gates'].includes(currentView)) renderList(currentView);
+      showToast('บันทึกแล้ว (รอตรวจสอบจาก Admin)');
+    }
+
+    function editItem(type, id) {
+      if (!isAdmin) { showToast('เฉพาะ Admin เท่านั้น'); return; }
+      const item = data[type].find(i => i.id === id);
+      if (!item) return;
+      if (type === 'tele') { showToast('สถานีโทรมาตรเป็นข้อมูลอ่านอย่างเดียว'); return; }
+      editingId = id;
+      document.getElementById('modal-title').textContent = 'แก้ไขข้อมูล';
+      document.getElementById('form-type').value = type;
+      document.getElementById('form-name').value = item.name;
+      document.getElementById('form-desc').value = item.desc || '';
+      document.getElementById('form-severity').value = String(item.severity || 3);
+      document.getElementById('form-lat').value = item.lat;
+      document.getElementById('form-lng').value = item.lng;
+      document.getElementById('form-reporter').value = item.reporter || '';
+
+      document.getElementById('form-photo').value = '';
+      const preview = document.getElementById('photo-preview');
+      const previewImg = document.getElementById('photo-preview-img');
+      preview.classList.add('hidden');
+      previewImg.removeAttribute('src');
+      if (item.photo) {
+        previewImg.src = item.photo;
+        preview.classList.remove('hidden');
+      }
+
+      document.getElementById('modal').classList.remove('hidden');
+      safeLucide();
+    }
+
+    function deleteItem(type, id) {
+      if (!isAdmin) { showToast('เฉพาะ Admin เท่านั้น'); return; }
+      if (!confirm('ลบข้อมูลนี้?')) return;
+      data[type] = data[type].filter(i => i.id !== id);
+      data._v = (data._v || 0) + 1;
+      safeSetItem('thaiflood_data', JSON.stringify(data));
+      renderMarkers();
+      if (['flooded','risk','gates'].includes(currentView)) renderList(currentView);
+    }
+
+    function locateMe(fillForm) {
+      if (!navigator.geolocation) return alert('เบราว์เซอร์ไม่รองรับ Geolocation');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          if (fillForm) {
+            document.getElementById('form-lat').value = latitude.toFixed(5);
+            document.getElementById('form-lng').value = longitude.toFixed(5);
+          } else {
+            switchView('map');
+            setTimeout(() => {
+              if (!map) return;
+              map.setView([latitude, longitude], 15);
+              L.circleMarker([latitude, longitude], {
+                radius: 10, color: '#0d9488', fillColor: '#14b8a6', fillOpacity: 0.6
+              }).addTo(map).bindPopup('ตำแหน่งของคุณ').openPopup();
+            }, 200);
+          }
+        },
+        () => alert('ไม่สามารถระบุตำแหน่งได้')
+      );
+    }
+
+    function purgeExpired() {
+      const now = Date.now();
+      let changed = false;
+
+      ['flooded','risk','gates'].forEach(type => {
+        const before = data[type].length;
+        data[type] = data[type].filter(i => !i.expiresAt || i.expiresAt > now);
+        if (data[type].length !== before) changed = true;
+      });
+
+      // จำกัดจำนวนสถานีโทรมาตรไม่ให้เกิน 500 จุด (กัน storage โตไม่จำกัด)
+      const MAX_TELE = 500;
+      if (Array.isArray(data.tele) && data.tele.length > MAX_TELE) {
+        const isSeed = i => (i.sourceId || '').startsWith('rid-seed-')
+                         || (i.sourceId || '').startsWith('bma-seed-');
+        const seeds = data.tele.filter(isSeed);
+        const others = data.tele.filter(i => !isSeed(i))
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+          .slice(0, Math.max(0, MAX_TELE - seeds.length));
+        data.tele = [...seeds, ...others];
+        changed = true;
+      }
+
+      if (changed) {
+        data._v = (data._v || 0) + 1;
+        safeSetItem('thaiflood_data', JSON.stringify(data));
+      }
+    }
+
+    // ============================================================
+    // Admin
+    // ============================================================
+    function checkAdminStatus() {
+      isAdmin = localStorage.getItem('thaiflood_admin') === 'true';
+      updateAdminUI();
+    }
+    function loginAdmin() {
+      const input = document.getElementById('admin-password').value;
+      if (input === getAdminPassword()) {
+        isAdmin = true;
+        localStorage.setItem('thaiflood_admin', 'true');
+        updateAdminUI(); renderAgencies(); renderApis(); renderTelemetryStatus();
+        renderMarkers();
+        if (['flooded','risk','gates'].includes(currentView)) renderList(currentView);
+      } else alert('รหัสผ่านไม่ถูกต้อง');
+    }
+    function logoutAdmin() {
+      isAdmin = false;
+      localStorage.removeItem('thaiflood_admin');
+      updateAdminUI();
+      renderMarkers();
+      if (['flooded','risk','gates'].includes(currentView)) renderList(currentView);
+    }
+    function updateAdminUI() {
+      const login = document.getElementById('login-panel');
+      const panel = document.getElementById('admin-panel');
+      const badge = document.getElementById('admin-badge');
+      if (isAdmin) {
+        login.classList.add('hidden'); panel.classList.remove('hidden');
+        badge.classList.remove('hidden'); badge.classList.add('flex');
+      } else {
+        login.classList.remove('hidden'); panel.classList.add('hidden');
+        badge.classList.add('hidden'); badge.classList.remove('flex');
+      }
+    }
+    function openChangePasswordModal() {
+      ['pw-current','pw-new','pw-confirm'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+      document.getElementById('password-modal').classList.remove('hidden');
+    }
+    function closeChangePasswordModal() {
+      document.getElementById('password-modal').classList.add('hidden');
+    }
+    function changePassword() {
+      const cur = document.getElementById('pw-current').value;
+      const nw = document.getElementById('pw-new').value;
+      const cf = document.getElementById('pw-confirm').value;
+      if (cur !== getAdminPassword()) return alert('รหัสปัจจุบันไม่ถูกต้อง');
+      if (!nw || nw.length < 4) return alert('รหัสใหม่ต้องมีอย่างน้อย 4 ตัวอักษร');
+      if (nw !== cf) return alert('รหัสยืนยันไม่ตรงกัน');
+      setAdminPassword(nw);
+      closeChangePasswordModal();
+      showToast('เปลี่ยนรหัสผ่านเรียบร้อย');
+    }
+
+    // ============================================================
+    // Agencies
+    // ============================================================
+    function renderAgencies() {
+      const c = document.getElementById('agencies-list');
+      if (!c) return;
+      c.innerHTML = agencies.map(a => `
+        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+          <div class="min-w-0">
+            <p class="font-medium text-slate-800 text-sm truncate">${escapeHtml(a.name)}</p>
+            <p class="text-xs text-slate-500 truncate">${a.type === 'agency' ? 'หน่วยงาน' : a.type === 'org' ? 'องค์กร' : 'บุคคล'} ${a.link ? '• ' + escapeHtml(a.link) : ''}</p>
+          </div>
+          <button onclick="deleteAgency(${a.id})" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg shrink-0">🗑️</button>
+        </div>
+      `).join('') || '<p class="text-sm text-slate-400">ยังไม่มีข้อมูล</p>';
+    }
+    function openAgencyModal() {
+      ['agency-name','agency-link'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+      document.getElementById('agency-type').value = 'agency';
+      document.getElementById('agency-modal').classList.remove('hidden');
+    }
+    function closeAgencyModal() { document.getElementById('agency-modal').classList.add('hidden'); }
+    function saveAgency() {
+      const name = document.getElementById('agency-name').value.trim();
+      if (!name) return alert('กรุณากรอกชื่อ');
+      agencies.push({
+        id: Date.now(), name,
+        type: document.getElementById('agency-type').value,
+        link: document.getElementById('agency-link').value.trim()
+      });
+      safeSetItem('thaiflood_agencies', JSON.stringify(agencies));
+      closeAgencyModal();
+      renderAgencies();
+    }
+    function deleteAgency(id) {
+      if (!confirm('ลบรายการนี้?')) return;
+      agencies = agencies.filter(a => a.id !== id);
+      safeSetItem('thaiflood_agencies', JSON.stringify(agencies));
+      renderAgencies();
+    }
+
+    // ============================================================
+    // APIs
+    // ============================================================
+    function renderApis() {
+      const c = document.getElementById('apis-list');
+      if (!c) return;
+      if (!apis.length) { c.innerHTML = '<p class="text-sm text-slate-400 py-2">ยังไม่มี API</p>'; return; }
+      const labels = { water: 'สถานการณ์น้ำ', weather: 'สภาพอากาศ', alert: 'เตือนภัย', flood: 'น้ำท่วม', other: 'อื่น ๆ' };
+      c.innerHTML = apis.map(a => `
+        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+          <div class="min-w-0 flex-1">
+            <p class="font-medium text-slate-800 text-sm truncate">${escapeHtml(a.name)}</p>
+            <p class="text-xs text-slate-500 truncate">${escapeHtml(labels[a.type] || a.type)} • ${escapeHtml(a.url)}</p>
+          </div>
+          <div class="flex gap-1 ml-2 shrink-0">
+            <button onclick="editApi(${a.id})" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg">✏️</button>
+            <button onclick="deleteApi(${a.id})" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    function openApiModal() {
+      editingApiId = null;
+      document.getElementById('api-modal-title').textContent = 'เพิ่ม API';
+      ['api-name','api-url','api-key','api-note'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+      document.getElementById('api-type').value = 'water';
+      document.getElementById('api-modal').classList.remove('hidden');
+    }
+    function closeApiModal() {
+      document.getElementById('api-modal').classList.add('hidden');
+      editingApiId = null;
+    }
+    function editApi(id) {
+      const api = apis.find(a => a.id === id); if (!api) return;
+      editingApiId = id;
+      document.getElementById('api-modal-title').textContent = 'แก้ไข API';
+      document.getElementById('api-name').value = api.name;
+      document.getElementById('api-url').value = api.url;
+      document.getElementById('api-key').value = api.key || '';
+      document.getElementById('api-type').value = api.type || 'other';
+      document.getElementById('api-note').value = api.note || '';
+      document.getElementById('api-modal').classList.remove('hidden');
+    }
+    function saveApi() {
+      const name = document.getElementById('api-name').value.trim();
+      const url = document.getElementById('api-url').value.trim();
+      if (!name || !url) return alert('กรุณากรอกชื่อและ URL');
+      const payload = {
+        name, url,
+        key: document.getElementById('api-key').value.trim(),
+        type: document.getElementById('api-type').value,
+        note: document.getElementById('api-note').value.trim()
+      };
+      if (editingApiId) {
+        const i = apis.findIndex(a => a.id === editingApiId);
+        if (i > -1) apis[i] = { ...apis[i], ...payload };
+      } else {
+        apis.push({ id: Date.now(), ...payload });
+      }
+      safeSetItem('thaiflood_apis', JSON.stringify(apis));
+      closeApiModal();
+      renderApis();
+      showToast('บันทึก API แล้ว');
+    }
+    function deleteApi(id) {
+      if (!confirm('ลบ API นี้?')) return;
+      apis = apis.filter(a => a.id !== id);
+      safeSetItem('thaiflood_apis', JSON.stringify(apis));
+      renderApis();
+    }
+
+    async function fetchConfiguredApis(type) {
+      const list = apis.filter(a => a.type === type);
+      // ⭐ แก้: เปลี่ยนชื่อจาก map → targets (กัน shadow Leaflet map)
+      const targets = {
+        water:   { container: 'api-water-content',   wrapper: 'api-water-results' },
+        alert:   { container: 'api-alert-content',   wrapper: 'api-alert-results' },
+        weather: { container: 'api-weather-content', wrapper: 'api-weather-results' },
+        flood:   { container: 'api-water-content',   wrapper: 'api-water-results' },
+        other:   { container: 'api-water-content',   wrapper: 'api-water-results' }
+      };
+      const target = targets[type] || targets.water;
+      const wrapperEl = document.getElementById(target.wrapper);
+      const el = document.getElementById(target.container);
+      if (!list.length) { if (wrapperEl) wrapperEl.classList.add('hidden'); return; }
+      if (wrapperEl) wrapperEl.classList.remove('hidden');
+      if (el) el.innerHTML = '<p class="text-slate-400">กำลังดึงข้อมูล...</p>';
+      for (const api of list) {
+        try {
+          let url = api.url;
+          if (api.key && !url.includes(api.key) && !url.includes('appid=')) {
+            url += (url.includes('?') ? '&' : '?') + 'appid=' + api.key;
+          }
+          const res = await fetch(url, {
+            headers: api.key && !url.includes(api.key) ? { 'Authorization': 'Bearer ' + api.key } : {}
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const json = await res.json();
+          if (el) el.innerHTML += `<div class="p-3 bg-slate-50 rounded-xl"><p class="font-medium text-slate-700">${escapeHtml(api.name)}</p><pre class="text-xs text-slate-500 mt-1 overflow-x-auto max-h-40">${escapeHtml(JSON.stringify(json, null, 2).substring(0, 800))}</pre></div>`;
+        } catch (err) {
+          if (el) el.innerHTML += `<div class="p-3 bg-rose-50 rounded-xl text-rose-700 text-xs"><strong>${escapeHtml(api.name)}</strong>: ดึงไม่ได้ (${escapeHtml(err.message)})</div>`;
+        }
+      }
+    }
+
+    // ============================================================
+    // Dual-source telemetry
+    // ============================================================
+    function adaptThaiWater(raw) {
+      const list = raw.waterlevel_data?.data || raw.data || (Array.isArray(raw) ? raw : []);
+      return list.map((s, idx) => {
+        const lat = parseFloat(s.station?.tele_station_lat || s.lat || s.geocode?.lat);
+        const lng = parseFloat(s.station?.tele_station_long || s.lon || s.lng || s.geocode?.lon);
+        const nameObj = s.station?.tele_station_name;
+        const name = (typeof nameObj === 'object' ? (nameObj.th || nameObj.en) : nameObj) || s.station?.tele_station_oldcode || ('ThaiWater #' + idx);
+        if (isNaN(lat) || isNaN(lng)) return null;
+        const level = parseInt(s.situation_level) || 2;
+        return {
+          sourceId: 'tw-' + (s.station?.id || s.station?.tele_station_oldcode || name),
+          name: String(name),
+          // ⭐ เปลี่ยน label: "ระดับเตือน N/5" แทน "ระดับ N"
+          desc: 'ThaiWater · ระดับเตือน ' + level + '/5' + (s.waterlevel_msl != null ? ' · ' + s.waterlevel_msl + ' ม.รทก.' : ''),
+          lat, lng,
+          reporter: 'ThaiWater / สสน.',
+          severity: Math.min(5, Math.max(1, level)),
+          status: 'approved',
+          time: 'ThaiWater API',
+          source: 'ThaiWater'
+        };
+      }).filter(Boolean);
+    }
+
+    function adaptBMA(raw) {
+      const list = Array.isArray(raw) ? raw : (raw.data || raw.results || raw.stations || raw.items || []);
+      return list.map((s, idx) => {
+        const lat = parseFloat(s.latitude ?? s.lat ?? s.LAT ?? s.y ?? (s.geom?.coordinates?.[1]));
+        const lng = parseFloat(s.longitude ?? s.lng ?? s.lon ?? s.LON ?? s.x ?? (s.geom?.coordinates?.[0]));
+        const name = s.st_name || s.st_name_en || s.st_code || s.name || ('BMA #' + idx);
+        if (isNaN(lat) || isNaN(lng)) return null;
+        const wl_m = s.wl_m ?? s.waterlevel_msl ?? s.water_level ?? s.level ?? null;
+        const st = String(s.status || s.warning_status || '').toLowerCase();
+        let sev = 2;
+        if (st.includes('critical') || st.includes('วิกฤต')) sev = 4;
+        else if (st.includes('warning') || st.includes('เตือน')) sev = 3;
+        return {
+          sourceId: 'bma-' + (s.st_code || s.id || name),
+          name,
+          desc: 'กทม. · ระดับ ' + (wl_m != null ? wl_m + ' ม.รทก.' : '-') + (s.status ? ' · ' + s.status : ''),
+          lat, lng,
+          reporter: 'กทม. สำนักการระบายน้ำ',
+          severity: sev,
+          status: 'approved',
+          time: s.site_time || s.time || 'BMA API',
+          source: 'BMA'
+        };
+      }).filter(Boolean);
+    }
+
+    async function fetchWithRetry(url, opts = {}, retries = 2, timeoutMs = 6000) {
+      for (let i = 0; i <= retries; i++) {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, { ...opts, signal: ctrl.signal });
+          clearTimeout(tid);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res;
+        } catch (e) {
+          clearTimeout(tid);
+          if (i === retries) throw e;
+          await new Promise(r => setTimeout(r, 500 * (i + 1)));
+        }
+      }
+    }
+
+    async function fetchTelemetryDualSource() {
+      const results = await Promise.allSettled([
+        (async () => {
+          const res = await fetchWithRetry('https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel_load');
+          const json = await res.json();
+          const d = adaptThaiWater(json);
+          if (!d.length) throw new Error('ThaiWater ไม่มีข้อมูล');
+          return { source: 'ThaiWater', data: d };
+        })(),
+        (async () => {
+          // เรียงลำดับ endpoint: ลองตัวหลักก่อน ถ้าล้มเหลวค่อยตัวสำรอง
+          const endpoints = [
+            'https://weather.bangkok.go.th/water/api/lastdata',
+            'https://weather.bangkok.go.th/api/mainwater/lastdata/0',
+            'https://weather.bangkok.go.th/api/mainwater/lastdata/1',
+            'https://flood.bangkok.go.th/api/mainwater/lastdata/0'
+          ];
+          for (const url of endpoints) {
+            try {
+              const res = await fetchWithRetry(url, { headers: { 'Accept': 'application/json' } }, 1, 5000);
+              const json = await res.json();
+              const d = adaptBMA(json);
+              if (d.length) return { source: 'BMA', data: d, endpoint: url };
+            } catch (e) { continue; }
+          }
+          throw new Error('BMA ทุก endpoint ล้มเหลว');
+        })()
+      ]);
+
+      const merged = [];
+      const seen = new Set();
+      const status = { ThaiWater: 'fail', BMA: 'fail' };
+      const counts = { ThaiWater: 0, BMA: 0 };
+
+      for (const r of results) {
+        if (r.status === 'fulfilled' && r.value?.data?.length) {
+          status[r.value.source] = 'ok';
+          for (const item of r.value.data) {
+            if (seen.has(item.sourceId)) continue;
+            seen.add(item.sourceId);
+            merged.push(item);
+            counts[r.value.source]++;
+          }
+        }
+      }
+      return { merged, status, counts };
+    }
+
+    // helper: set loading state ให้ปุ่มที่มี data-tele-load
+    function setTeleButtonsLoading(loading) {
+      document.querySelectorAll('button[data-tele-load]').forEach(b => {
+        if (loading) {
+          b.dataset._orig = b.textContent;
+          b.disabled = true;
+          b.textContent = '⏳ กำลังโหลด...';
+        } else {
+          b.disabled = false;
+          b.textContent = b.dataset._orig || '+ โหลดโทรมาตร';
+        }
+      });
+    }
+
+    async function loadTelemetryStations(showMsg) {
+      setTeleButtonsLoading(true);
+      try {
+        if (!data.tele) data.tele = [];
+
+        if (data.tele.length > 0) renderMarkers();
+
+        let seedItems = data.tele.filter(i => {
+          const sid = i.sourceId || '';
+          return sid.startsWith('bma-seed-') || sid.startsWith('rid-seed-');
+        });
+
+        if (!seedItems.length) {
+          seedItems = [];
+          // Seed กรมชลประทาน (18 จุด)
+          const ridSeed = [
+            { code:'N-CM-01', name:'โทรมาตร แม่น้ำปิง จ.เชียงใหม่', lat:18.7883, lng:98.9853 },
+            { code:'N-L แP-01', name:'โทรมาตร แม่น้ำวัง จ.ลำปาง', lat:18.2880, lng:99.4920 },
+            { code:'N-CR-01', name:'โทรมาตร แม่น้ำกก จ.เชียงราย', lat:19.9070, lng:99.8320 },
+            { code:'N-NA-01', name:'โทรมาตร แม่น้ำน่าน จ.น่าน', lat:18.7750, lng:100.7730 },
+            { code:'N-PL-01', name:'โทรมาตร แม่น้ำน่าน จ.พิษณุโลก', lat:16.8210, lng:100.2650 },
+            { code:'C-NS-01', name:'โทรมาตร แม่น้ำเจ้าพระยา จ.นครสวรรค์', lat:15.7040, lng:100.1200 },
+            { code:'C-CN-01', name:'โทรมาตร เขื่อนเจ้าพระยา จ.ชัยนาท', lat:15.1800, lng:100.1400 },
+            { code:'C-AY-01', name:'โทรม่น้ำเจ้าพระยา อยุธยา', lat:14.3550, lng:100.5680 },
+            { code:'C-NB-01', name:'โทรมาตร แม่น้ำเจ้าพระยา นนทบุรี', lat:13.8600, lng:100.4800 },
+            { code:'C-PT-01', name:'โทรมาตร แม่น้ำเจ้าพระยา ปทุมธานี', lat:14.0200, lng:100.5300 },
+            { code:'C-BK-01', name:'โทรมาตร แม่น้ำเจ้าพระยา กทม.', lat:13.7560, lng:100.4890 },
+            { code:'C-SPK-01', name:'โทรมาตร แม่น้ำเจ้าพระยา สมุทรปราการ', lat:13.6000, lng:100.6000 },
+            { code:'E-CB-01', name:'โทรมาตร แม่น้ำบางปะกง ฉะเชิงเทรา', lat:13.6900, lng:101.0700 },
+            { code:'NE-KK-01', name:'โทรมาตร แม่น้ำชี ขอนแก่น', lat:16.4400, lng:102.8300 },
+            { code:'NE-UB-01', name:'โทรมาตร แม่น้ำมูล อุบลฯ', lat:15.2400, lng:104.8500 },
+            { code:'S-NS-01', name:'โทรมาตร แม่น้ำตาปี นครศรีฯ', lat:8.4300, lng:99.9600 },
+            { code:'MK-KB-01', name:'โทรมาตร เขื่อนวชิราลงกรณ กาญจน์', lat:14.8300, lng:98.5800 },
+            { code:'MK-KB-03', name:'โทรมาตร แม่น้ำแม่กลอง กาญจน์', lat:14.0200, lng:99.5300 }
+          ];
+          ridSeed.forEach((s, idx) => {
+            seedItems.push({
+              id: Date.now() + 100 + idx, sourceId: 'rid-seed-' + s.code,
+              name: s.name, desc: 'สถานีโทรมาตรอ้างอิง · กรมชลประทาน',
+              lat: s.lat, lng: s.lng, reporter: 'กรมชลประทาน',
+              severity: 2, status: 'approved', createdAt: Date.now(),
+              time: 'Seed', type: 'tele'
+            });
+          });
+
+          // Seed กทม. — ครอบคลุมทั้งฝั่งตะวันตกและตะวันออก
+          const bmaSeed = [
+            // ฝั่งตะวันตก (เดิม)
+            { code: 'WL.BCN.03', name: 'คลองบางเชือกหนัง - พุทธมณฑลสาย 2', lat: 13.75173, lng: 100.39162 },
+            { code: 'WL.BCN.01', name: 'คลองบางเชือกหนัง - กาญจนาภิเษก', lat: 13.74925, lng: 100.40654 },
+            { code: 'WL.BCN.02', name: 'คลองบางเชือกหนัง - พุทธมณฑลสาย 1', lat: 13.74222, lng: 100.42764 },
+            { code: 'WL.MSW.03', name: 'คลองมหาสวัสดิ์ - พุทธมณฑลสาย 2', lat: 13.80187, lng: 100.39432 },
+            { code: 'WL.TWW.04', name: 'คลองทวีวัฒนา', lat: 13.75037, lng: 100.35351 },
+            { code: 'WL.PKS.69', name: 'เพชรเกษม 69 (เฝ้าระวัง)', lat: 13.7085, lng: 100.3710 },
+            { code: 'WL.PSC.03', name: 'คลองภาษีเจริญ - คลองราชมนตรี', lat: 13.70818, lng: 100.42615 },
+            { code: 'WL.SBR.01', name: 'ประตูระบายน้ำขุนศรีบุรีรักษ์', lat: 13.80244, lng: 100.37070 },
+            { code: 'WL.TWW.01', name: 'ประตูระบายน้ำคลองทวีวัฒนา', lat: 13.80042, lng: 100.32977 },
+            { code: 'WL.LPN.AREA', name: 'ถนนลาดพร้าว (วังทองหลาง)', lat: 13.7860, lng: 100.6050 },
+            { code: 'WL.RAM2.AREA', name: 'ถนนพระราม 2 (บางขุนเทียน)', lat: 13.6590, lng: 100.4350 },
+            // ⭐ ฝั่งตะวันออก (เพิ่มใหม่ 8 จุด)
+            { code: 'WL.SEB.01', name: 'คลองแสนแสบ - ประตูระบายน้ำ', lat: 13.7480, lng: 100.5700 },
+            { code: 'WL.SEB.02', name: 'คลองแสนแสบ - มีนบุรี', lat: 13.8130, lng: 100.7300 },
+            { code: 'WL.LPN.01', name: 'คลองลาดพร้าว - วัดบึงทองหลาง', lat: 13.7890, lng: 100.6100 },
+            { code: 'WL.LPN.02', name: 'คลองลาดพร้าว - บางกะปิ', lat: 13.7700, lng: 100.6400 },
+            { code: 'WL.BKN.01', name: 'คลองบางเขน - หลักสี่', lat: 13.8850, lng: 100.5800 },
+            { code: 'WL.SMW.01', name: 'คลองสามวา', lat: 13.8650, lng: 100.7200 },
+            { code: 'WL.PVB.01', name: 'คลองประเวศบุรีรมย์', lat: 13.7150, lng: 100.7350 },
+            { code: 'WL.SKN.01', name: 'คลองสำโรง', lat: 13.6800, lng: 100.6050 }
+          ];
+          bmaSeed.forEach((s, idx) => {
+            seedItems.push({
+              id: Date.now() + 3000 + idx, sourceId: 'bma-seed-' + s.code,
+              name: s.name, desc: 'กทม. สำนักการระบายน้ำ · รหัส ' + s.code,
+              lat: s.lat, lng: s.lng, reporter: 'กทม. สำนักการระบายน้ำ',
+              severity: 2, status: 'approved', createdAt: Date.now(),
+              time: 'Seed', type: 'tele'
+            });
+          });
+        }
+
+        // ลองดึงข้อมูลสด
+        let merged = [], status = { ThaiWater: 'fail', BMA: 'fail' }, counts = { ThaiWater: 0, BMA: 0 };
+        let fetchSuccess = false;
+        try {
+          const result = await fetchTelemetryDualSource();
+          merged = result.merged;
+          status = result.status;
+          counts = result.counts;
+          if (merged.length > 0) fetchSuccess = true;
+        } catch (e) {
+          console.warn('Dual-source fetch error:', e);
+        }
+
+        const seen = new Set(seedItems.map(i => i.sourceId));
+        const finalList = [...seedItems];
+
+        if (fetchSuccess) {
+          // ⭐ แก้ id: ใช้ sequential counter แทนการสุ่ม (กัน id ชนกัน)
+          let seq = 0;
+          const baseId = Date.now() * 1000;
+          for (const item of merged) {
+            if (seen.has(item.sourceId)) continue;
+            seen.add(item.sourceId);
+            finalList.push({
+              ...item,
+              id: baseId + (seq++),
+              createdAt: Date.now(),
+              type: 'tele'
+            });
+          }
+        } else {
+          (data.tele || []).forEach(i => {
+            if (!i.sourceId || seen.has(i.sourceId)) return;
+            seen.add(i.sourceId);
+            finalList.push(i);
+          });
+        }
+
+        data.tele = finalList;
+        data._v = (data._v || 0) + 1;
+        safeSetItem('thaiflood_data', JSON.stringify(data));
+
+        const prevCache = JSON.parse(localStorage.getItem('thaiflood_tele_cache') || '{}');
+        const lastFetch = fetchSuccess ? Date.now() : (prevCache.lastFetch || null);
+        safeSetItem('thaiflood_tele_cache', JSON.stringify({
+          lastFetch,
+          sources: status,
+          counts,
+          total: finalList.length,
+          isOfflineCache: !fetchSuccess
+        }));
+
+        if (!fetchSuccess && showMsg) {
+          const t = prevCache.lastFetch ? new Date(prevCache.lastFetch).toLocaleTimeString('th-TH') : 'ก่อนหน้า';
+          showToast(`⚠️ ดึงข้อมูลปัจจุบันไม่ได้ กำลังแสดงข้อมูลล่าสุด (${t})`);
+        }
+
+        renderMarkers();
+        if (currentView === 'settings' && isAdmin) renderTelemetryStatus();
+
+        return finalList.length;
+      } finally {
+        setTeleButtonsLoading(false);
+      }
+    }
+
+    function renderTelemetryStatus() {
+      const listEl = document.getElementById('tele-status-list');
+      if (!listEl) return;
+      const cache = JSON.parse(localStorage.getItem('thaiflood_tele_cache') || '{}');
+      const sources = cache.sources || {};
+      const counts = cache.counts || {};
+      const labels = {
+        ThaiWater: '💧 ThaiWater (สสน.) — ครอบคลุมทั่วประเทศ',
+        BMA: '🌆 กทม. สำนักการระบายน้ำ — เขตเมือง กทม.'
+      };
+      const entries = Object.entries(labels);
+      listEl.innerHTML = entries.map(([key, label]) => {
+        const ok = sources[key] === 'ok';
+        return `<div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+          <div>
+            <p class="text-slate-700 text-sm font-medium">${label}</p>
+            <p class="text-xs text-slate-500 mt-0.5">${ok ? 'ดึงข้อมูลออนไลน์สำเร็จ ' + (counts[key] || 0) + ' สถานี' : 'ใช้อยู่ในโหมดข้อมูลแคชล่าสุด'}</p>
+          </div>
+          <span class="${ok ? 'text-teal-600' : 'text-amber-600'} font-medium text-xs whitespace-nowrap ml-2">
+            ${ok ? '✓ ออนไลน์' : '⚠️ แคชล่าสุด'}
+          </span>
+        </div>`;
+      }).join('');
+
+      const teleCount = (data.tele || []).length;
+      const totalEl = document.getElementById('tele-total');
+      const luEl = document.getElementById('tele-last-update');
+      if (totalEl) totalEl.textContent = 'จำนวนสถานีทั้งหมด: ' + teleCount + ' จุด';
+      if (luEl) {
+        const lu = cache.lastFetch ? new Date(cache.lastFetch).toLocaleString('th-TH') : 'ข้อมูลตั้งต้น';
+        luEl.textContent = 'อัปเดตล่าสุด: ' + lu;
+      }
+    }
+
+    async function forceReloadTelemetry() {
+      showToast('กำลังบังคับโหลดโทรมาตรใหม่...');
+      localStorage.removeItem('thaiflood_tele_cache');
+      await loadTelemetryStations(true);
+      renderTelemetryStatus();
+      renderMarkers();
+    }
+
+    // ============================================================
+    // Debug
+    // ============================================================
+    async function runDebugTest() {
+      const el = document.getElementById('debug-results');
+      const btn = document.getElementById('btn-debug-run');
+      if (!el || !btn) return;
+      btn.disabled = true; btn.textContent = 'กำลังทดสอบ...';
+      el.innerHTML = '';
+      const endpoints = [
+        'https://weather.bangkok.go.th/water/api/lastdata',
+        'https://weather.bangkok.go.th/api/mainwater/lastdata/0',
+        'https://flood.bangkok.go.th/api/mainwater/lastdata/0',
+        'https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel_load',
+        'https://app.rid.go.th/reservoir/api/dam/public'
+      ];
+      for (const url of endpoints) {
+        const t0 = performance.now();
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 6000);
+        try {
+          const res = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: ctrl.signal });
+          clearTimeout(tid);
+          const ms = Math.round(performance.now() - t0);
+          if (!res.ok) {
+            el.innerHTML += `<div class="p-2 bg-rose-50 rounded-lg"><p class="text-rose-700 font-semibold">✗ ${escapeHtml(url)}</p><p class="text-rose-600 text-xs mt-1">HTTP ${res.status} · ${ms}ms</p></div>`;
+            continue;
+          }
+          const text = await res.text();
+          const preview = escapeHtml(text.substring(0, 200));
+          let parsed = false;
+          try { JSON.parse(text); parsed = true; } catch {}
+          el.innerHTML += `<div class="p-2 bg-teal-50 rounded-lg">
+            <p class="text-teal-700 font-semibold">✓ ${escapeHtml(url)}</p>
+            <p class="text-teal-600 text-xs mt-1">${ms}ms · ${text.length} bytes · JSON: ${parsed ? 'ok' : 'ไม่ใช่ JSON'}</p>
+            <pre class="mt-1 text-[10px] text-slate-600 overflow-x-auto max-h-20 bg-white p-2 rounded">${preview}</pre>
+          </div>`;
+        } catch (e) {
+          clearTimeout(tid);
+          const ms = Math.round(performance.now() - t0);
+          const isTimeout = e.name === 'AbortError';
+          el.innerHTML += `<div class="p-2 bg-amber-50 rounded-lg">
+            <p class="text-amber-700 font-semibold">⚠️ ${escapeHtml(url)}</p>
+            <p class="text-amber-600 text-xs mt-1">${ms}ms · ${escapeHtml(isTimeout ? 'หมดเวลา 6 วินาที' : e.message)}</p>
+            <p class="text-amber-500 text-[10px] mt-1">→ ติด CORS / บล็อกในเบราว์เซอร์ (ระบบยกข้อมูลแคชล่าสุดขึ้นแสดงอัตโนมัติ)</p>
+          </div>`;
+        }
+      }
+      btn.disabled = false; btn.textContent = 'เริ่มทดสอบ';
+    }
+
+    // ============================================================
+    // External APIs
+    // ============================================================
+    async function fetchRidDams() {
+      const el = document.getElementById('rid-dams-content');
+      if (!el) return;
+      el.innerHTML = '<p class="text-slate-400">กำลังดึงข้อมูลเขื่อน...</p>';
+      try {
+        const res = await fetch('https://app.rid.go.th/reservoir/api/dam/public');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const json = await res.json();
+        const dams = Array.isArray(json) ? json : (json.data || json.dams || []);
+        if (!dams.length) { el.innerHTML = '<p class="text-slate-500 text-xs">ไม่พบข้อมูล</p>'; return; }
+        el.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+          ${dams.slice(0, 12).map(d => {
+            const name = d.name || d.dam_name || d.Name || '-';
+            const pct = d.percent_storage ?? d.percent ?? d.storage_percent ?? null;
+            const vol = d.volume ?? d.storage ?? null;
+            const pctColor = pct > 80 ? 'text-rose-600' : pct > 50 ? 'text-amber-600' : 'text-teal-600';
+            return `<div class="p-2.5 bg-slate-50 rounded-xl">
+              <p class="font-medium text-slate-800 text-xs truncate">${escapeHtml(name)}</p>
+              <p class="text-xs mt-0.5 ${pctColor}">${pct != null ? Number(pct).toFixed(1) + '%' : '-'} ${vol != null ? '· ' + Number(vol).toLocaleString() + ' ล้าน ลบ.ม.' : ''}</p>
+            </div>`;
+          }).join('')}
+        </div>
+        <p class="text-xs text-slate-400 mt-2">แหล่งข้อมูล: กรมชลประทาน</p>`;
+      } catch (err) {
+        el.innerHTML = `<p class="text-amber-600 text-xs">ไม่สามารถดึงข้อมูลเขื่อนจาก RID API โดยตรงได้ (${escapeHtml(err.message)}) สามารถดูข้อมูลได้ที่ <a href="https://www.thaiwater.net" target="_blank" rel="noopener" class="underline text-teal-600">ThaiWater.net</a></p>`;
+      }
+    }
+
+    async function fetchWeather() {
+      const el = document.getElementById('weather-content');
+      if (!el) return;
+      el.innerHTML = '<p class="text-slate-400">กำลังโหลด...</p>';
+      try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=13.75&longitude=100.50&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m&timezone=Asia%2FBangkok');
+        const d = await res.json();
+        const c = d.current;
+        const weatherCodes = { 0:'แจ่มใส',1:'แจ่มใสส่วนใหญ่',2:'เมฆบางส่วน',3:'เมฆมาก',45:'หมอก',48:'หมอกน้ำแข็ง',51:'ฝนละออง',61:'ฝนเล็กน้อย',63:'ฝนปานกลาง',65:'ฝนหนัก',80:'ฝนเป็นช่วง',95:'พายุฝนฟ้าคะนอง' };
+        el.innerHTML = `
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-sky-50 rounded-xl p-3 text-center"><p class="text-2xl font-bold text-sky-700">${c.temperature_2m}°</p><p class="text-xs text-slate-500">อุณหภูมิ (°C)</p></div>
+            <div class="bg-blue-50 rounded-xl p-3 text-center"><p class="text-2xl font-bold text-blue-700">${c.relative_humidity_2m}%</p><p class="text-xs text-slate-500">ความชื้น</p></div>
+            <div class="bg-indigo-50 rounded-xl p-3 text-center"><p class="text-2xl font-bold text-indigo-700">${c.precipitation} mm</p><p class="text-xs text-slate-500">ปริมาณฝน</p></div>
+            <div class="bg-slate-50 rounded-xl p-3 text-center"><p class="text-lg font-bold text-slate-700">${c.wind_speed_10m}</p><p class="text-xs text-slate-500">ลม (km/h)</p></div>
+          </div>
+          <p class="mt-3 text-sm text-slate-600">สภาพ: <strong>${escapeHtml(weatherCodes[c.weather_code] || 'ไม่ทราบ')}</strong> (กรุงเทพฯ • Open-Meteo)</p>
+          <p class="text-xs text-slate-400 mt-1">อัปเดต: ${escapeHtml(c.time)}</p>
+        `;
+      } catch (err) {
+        el.innerHTML = `<p class="text-rose-600 text-sm">ไม่สามารถโหลดข้อมูลอากาศได้: ${escapeHtml(err.message)}</p>`;
+      }
+    }
+
+    // ============================================================
+    // Copy code
+    // ============================================================
+    async function copyFullCode() {
+      const btn = document.getElementById('copy-btn-text');
+      try {
+        let html;
+        try {
+          const res = await fetch(location.href, { cache: 'no-store' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          html = await res.text();
+        } catch (e) {
+          throw new Error('ไม่สามารถอ่านโค้ดต้นฉบับได้ (ต้องรันผ่าน http/https)');
+        }
+        try {
+          await navigator.clipboard.writeText(html);
+        } catch {
+          const ta = document.createElement('textarea');
+          ta.value = html;
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); document.body.removeChild(ta);
+        }
+        btn.textContent = 'คัดลอกแล้ว!';
+        showToast('คัดลอกโค้ดเรียบร้อยแล้ว');
+        setTimeout(() => { btn.textContent = 'คัดลอกโค้ดทั้งหมด'; }, 2000);
+      } catch (err) {
+        if (!confirm(err.message + '\n\nต้องการคัดลอก DOM ปัจจุบันแทนหรือไม่? (อาจมี element ที่ Leaflet สร้างตอนรันปนอยู่)')) return;
+        try {
+          const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+          const ta = document.createElement('textarea');
+          ta.value = html;
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); document.body.removeChild(ta);
+          showToast('คัดลอก DOM ปัจจุบันแล้ว (อาจไม่สมบูรณ์)');
+        } catch (e2) {
+          alert('คัดลอกไม่สำเร็จ: ' + e2.message);
+        }
+      }
+    }
+
+    // ============================================================
+    // Toast
+    // ============================================================
+    let toastTimer = null;
+    function showToast(msg) {
+      document.querySelectorAll('#toast').forEach(el => el.remove());
+      if (toastTimer) clearTimeout(toastTimer);
+      const t = document.createElement('div');
+      t.id = 'toast'; t.setAttribute('role', 'status');
+      t.style.cssText = 'position:fixed;bottom:6rem;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:0.75rem 1.25rem;border-radius:0.75rem;box-shadow:0 10px 15px -3px rgba(0,0,0,0.2);z-index:99999;font-size:0.875rem;font-weight:500;pointer-events:none;opacity:1;transition:opacity 0.25s ease;max-width:90vw;text-align:center';
+      t.textContent = msg;
+      document.body.appendChild(t);
+      toastTimer = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => { if (t.parentNode) t.remove(); }, 250); }, 3500);
+    }
+  </script>
+</body>
+</html>
