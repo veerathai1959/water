@@ -1,0 +1,1982 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d9488">
+<meta name="description" content="ระบบติดตามน้ำท่วมประเทศไทย">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://flood.pop.in.th" crossorigin>
+<link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
+<title>ThaiFlood Watch | ระบบติดตามน้ำท่วมประเทศไทย</title>
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230d9488'/%3E%3Cpath d='M4 16q3 2.5 6 0t6 0 6 0 6 0M4 24q3 2.5 6 0t6 0 6 0 6 0M4 8q3 2.5 6 0t6 0 6 0 6 0' stroke='white' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;overflow:hidden}
+body{font-family:'Sarabun',system-ui,-apple-system,sans-serif;background:#f8fafc;color:#1e293b;-webkit-tap-highlight-color:transparent}
+img{max-width:100%;display:block}
+button,input,select,textarea{font:inherit;color:inherit;outline:none}
+button{cursor:pointer;border:none;background:none}
+a{color:inherit;text-decoration:none}
+.flex{display:flex}.flex-1{flex:1 1 0%}.flex-col{flex-direction:column}
+.h-screen{height:100vh;height:100dvh}.h-full{height:100%}.h-14{height:3.5rem}
+.w-full{width:100%}.w-72{width:18rem}.w-10{height:2.5rem;width:2.5rem}
+.relative{position:relative}.absolute{position:absolute}.fixed{position:fixed}
+.inset-0{top:0;right:0;bottom:0;left:0}
+.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}
+.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}
+.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}
+.rounded-lg{border-radius:.5rem}.rounded-xl{border-radius:.75rem}.rounded-2xl{border-radius:1rem}
+.bg-white{background:#fff}.bg-slate-50{background:#f8fafc}.bg-slate-100{background:#f1f5f9}
+.text-slate-600{color:#475569}.text-slate-800{color:#1e293b}.text-white{color:#fff}
+.font-medium{font-weight:500}.font-semibold{font-weight:600}.font-bold{font-weight:700}
+.text-xs{font-size:.75rem}.text-sm{font-size:.875rem}.text-base{font-size:1rem}.text-lg{font-size:1.125rem}
+.hidden{display:none!important}
+.overflow-hidden{overflow:hidden}.overflow-y-auto{overflow-y:auto}
+.z-10{z-index:10}.z-20{z-index:20}.z-50{z-index:50}
+.border-b{border-bottom:1px solid}.border-slate-200{border-color:#e2e8f0}
+.shadow-sm{box-shadow:0 1px 2px rgba(0,0,0,.05)}.shadow-lg{box-shadow:0 10px 15px -3px rgba(0,0,0,.1)}
+#map{position:absolute;top:0;left:0;right:0;bottom:0;background:#e2e8f0;z-index:0}
+#map.leaflet-container{background:#e2e8f0;font-family:'Sarabun',sans-serif}
+#map-loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;background:rgba(255,255,255,.97);padding:16px 24px;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.15);font-size:13px;color:#0f766e;font-weight:600;text-align:center;max-width:80vw;font-family:'Sarabun',sans-serif}
+#map-loading button{cursor:pointer;pointer-events:auto}
+#map-loading .spinner{display:inline-block;width:14px;height:14px;border:2px solid #ccfbf1;border-top-color:#0d9488;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sidebar-item.active{background:linear-gradient(135deg,#0d9488 0%,#0ea5e9 100%);color:#fff}
+.sidebar-item.active span{color:#fff}
+.layer-btn.active{background-color:#0d9488!important;color:#fff!important}
+.modal-backdrop{background:rgba(15,23,42,.6);backdrop-filter:blur(4px)}
+.leaflet-popup-content-wrapper{border-radius:12px;box-shadow:0 10px 25px -5px rgba(0,0,0,.15)}
+.gov-badge{display:inline-block;font-size:.75rem;line-height:1;vertical-align:middle}
+.popnix-badge{display:inline-block;font-size:9px;padding:1px 5px;border-radius:4px;background:#cffafe;color:#0e7490;font-weight:600;margin-left:4px;vertical-align:middle}
+.disclaimer-line{font-size:10px;color:#94a3b8;font-style:italic;margin-top:4px;padding-top:4px;border-top:1px dashed #e2e8f0}
+.scrollbar-thin::-webkit-scrollbar{width:5px;height:5px}
+.scrollbar-thin::-webkit-scrollbar-track{background:#f1f5f9}
+.scrollbar-thin::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:3px}
+.safe-bottom{padding-bottom:env(safe-area-inset-bottom,0px)}
+.safe-top{padding-top:env(safe-area-inset-top,0px)}
+#header-scroll{display:flex;align-items:center;gap:4px;overflow-x:auto;overflow-y:hidden;flex-shrink:1;min-width:0;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scroll-behavior:smooth}
+#header-scroll::-webkit-scrollbar{display:none;width:0;height:0}
+#header-scroll{-ms-overflow-style:none;scrollbar-width:none}
+#quick-layers{display:flex;gap:6px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-radius:999px;padding:6px 10px;box-shadow:0 6px 20px rgba(0,0,0,.18);max-width:calc(100vw - 24px);overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+#quick-layers::-webkit-scrollbar{display:none;width:0;height:0}
+#quick-layers{-ms-overflow-style:none;scrollbar-width:none}
+#quick-layers button{transition:transform .15s,filter .15s;cursor:pointer;border:none;flex-shrink:0}
+#quick-layers button:active{transform:scale(.93);filter:brightness(.95)}
+@media (max-width:420px){
+  #quick-layers{padding:4px 6px;gap:4px}
+  #quick-layers button{padding:3px 7px!important;font-size:8px!important}
+  #quick-layers button>span:first-child{font-size:14px!important}
+}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+.skeleton{background:linear-gradient(90deg,#f1f5f9 0%,#e2e8f0 50%,#f1f5f9 100%);background-size:800px 100%;animation:shimmer 1.4s infinite linear;border-radius:.75rem;min-height:2rem}
+.map-fallback{position:absolute;inset:0;background:linear-gradient(135deg,#cbd5e1,#e2e8f0);display:flex;align-items:center;justify-content:center;padding:1rem;text-align:center}
+.map-fallback-card{background:#fff;padding:1.5rem;border-radius:1rem;box-shadow:0 10px 25px rgba(0,0,0,.1);max-width:22rem}
+.map-fallback-card h3{margin:0 0 .5rem;color:#dc2626;font-size:1rem}
+.map-fallback-card p{margin:.25rem 0;color:#475569;font-size:.8rem;line-height:1.5}
+.map-fallback-card button{margin-top:.75rem;padding:.5rem 1rem;background:#0d9488;color:#fff;border-radius:.75rem;font-size:.85rem;font-weight:600}
+.map-fallback iframe{width:100%;height:100%;border:0}
+#diag-banner{position:fixed;top:0;left:0;right:0;background:#fef3c7;color:#92400e;padding:8px 14px;font-size:12px;font-family:monospace;z-index:99999;border-bottom:2px solid #f59e0b;max-height:35vh;overflow:auto;display:none;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+#diag-banner.show{display:block}
+#diag-banner.err{background:#fee2e2;color:#991b1b;border-color:#ef4444}
+#diag-banner strong{display:block;margin-bottom:4px}
+#diag-banner .close{position:absolute;right:8px;top:6px;font-size:16px;font-weight:700;cursor:pointer}
+@media (max-width:768px){
+  #sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .3s;z-index:50;max-width:85vw}
+  #sidebar.open{transform:translateX(0)}
+  #sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40}
+  #sidebar-overlay.show{display:block}
+  .md-mobile-hidden{display:none}
+}
+@media (min-width:769px){.md-desktop-hidden{display:none!important}}
+</style>
+</head>
+<body>
+
+<div id="diag-banner" role="alert">
+  <span class="close" onclick="this.parentElement.classList.remove('show')">✕</span>
+  <strong>⚠️ แจ้งเตือนระบบ</strong>
+  <div id="diag-content"></div>
+</div>
+
+<div id="boot-overlay" style="position:fixed;inset:0;background:linear-gradient(135deg,#0d9488,#0891b2);display:flex;align-items:center;justify-content:center;flex-direction:column;color:#fff;z-index:100000;font-family:'Sarabun',sans-serif">
+  <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:pulse 1.2s infinite"><path d="M2 12q2.5 2 5 0t5 0 5 0 5 0"/><path d="M2 19q2.5 2 5 0t5 0 5 0 5 0"/><path d="M2 5q2.5 2 5 0t5 0 5 0 5 0"/></svg>
+  <p style="margin-top:12px;font-size:14px;font-weight:600">ThaiFlood Watch</p>
+  <p id="boot-status" style="margin-top:4px;font-size:12px;opacity:.85">กำลังเริ่มระบบ...</p>
+</div>
+<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}</style>
+
+<!-- Synchronous Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>if(typeof L==='undefined')document.write('<scr'+'ipt src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"><\/scr'+'ipt>');</script>
+<script>if(typeof L==='undefined')document.write('<scr'+'ipt src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"><\/scr'+'ipt>');</script>
+
+<script>
+window.__TF = { loaded: {}, errors: [], startTime: Date.now(), booted: false };
+window.__TF.loaded.leaflet = (typeof L !== 'undefined');
+
+function tfLog(msg, isErr) {
+  try { console[isErr ? 'error' : 'log']('[TF]', msg); } catch(e) {}
+  if (isErr) window.__TF.errors.push(String(msg));
+}
+function tfShowBanner(msg, isErr) {
+  try {
+    var b = document.getElementById('diag-banner'), c = document.getElementById('diag-content');
+    if (!b || !c) return;
+    b.classList.add('show'); if (isErr) b.classList.add('err');
+    c.innerHTML += '<div style="margin:2px 0">' + (isErr ? '✗ ' : '• ') + msg + '</div>';
+  } catch(e) {}
+}
+function tfHideBoot() {
+  try {
+    var el = document.getElementById('boot-overlay');
+    if (el && el.parentNode) { el.style.opacity = '0'; el.style.transition = 'opacity .25s';
+      setTimeout(function() { try { el.remove(); } catch(e) {} }, 300); }
+  } catch(e) {}
+}
+setTimeout(tfHideBoot, 1500);
+setTimeout(tfHideBoot, 3000);
+(function(){
+  var s1 = document.createElement('script'); s1.async = true; s1.src = 'https://cdn.tailwindcss.com?plugins=forms'; document.head.appendChild(s1);
+  var s2 = document.createElement('script'); s2.async = true; s2.src = 'https://unpkg.com/lucide@latest/dist/umd/lucide.min.js'; document.head.appendChild(s2);
+})();
+tfLog('Head init. L=' + (typeof L !== 'undefined'));
+</script>
+
+<!-- APP HTML -->
+<div class="flex h-screen overflow-hidden">
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <aside id="sidebar" class="w-72 bg-white border-b border-slate-200 flex flex-col shadow-lg z-50 shrink-0">
+    <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 rounded-xl" style="background:linear-gradient(135deg,#14b8a6,#0ea5e9);display:flex;align-items:center;justify-content:center;color:#fff">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12q2.5 2 5 0t5 0 5 0 5 0"/><path d="M2 19q2.5 2 5 0t5 0 5 0 5 0"/><path d="M2 5q2.5 2 5 0t5 0 5 0 5 0"/></svg>
+        </div>
+        <div>
+          <h1 class="font-bold text-base text-slate-800" style="line-height:1.2">ThaiFlood Watch</h1>
+          <p class="text-xs text-slate-600">ระบบติดตามน้ำท่วมประเทศไทย</p>
+        </div>
+      </div>
+      <button onclick="closeSidebar()" class="md-desktop-hidden p-2">✕</button>
+    </div>
+
+    <nav class="flex-1 p-3 overflow-y-auto scrollbar-thin">
+      <button onclick="switchView('map')" data-view="map" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-xl text-sm font-medium" style="text-align:left"><span>🗺️</span> แผนที่หลัก</button>
+      <button onclick="switchView('flooded')" data-view="flooded" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-600" style="text-align:left"><span>💧</span> พื้นที่น้ำท่วมขัง</button>
+      <button onclick="switchView('risk')" data-view="risk" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-600" style="text-align:left"><span>⚠️</span> พื้นที่เสี่ยงน้ำท่วม</button>
+      <button onclick="switchView('gates')" data-view="gates" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-600" style="text-align:left"><span>🚪</span> ประตูระบายน้ำ</button>
+      <div style="padding:12px 16px 4px"><p class="text-xs font-semibold" style="color:#94a3b8;letter-spacing:.05em">ข้อมูลสถานการณ์</p></div>
+      <button onclick="switchView('situation')" data-view="situation" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-600" style="text-align:left"><span>📄</span> สถานการณ์น้ำ</button>
+      <button onclick="switchView('weather')" data-view="weather" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-600" style="text-align:left"><span>🌤️</span> วิเคราะห์สภาพอากาศ</button>
+      <button onclick="switchView('alert')" data-view="alert" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-600" style="text-align:left"><span>🚨</span> เตือนภัย</button>
+      <div style="padding:12px 16px 4px"><p class="text-xs font-semibold" style="color:#94a3b8;letter-spacing:.05em">ระบบ</p></div>
+      <button onclick="switchView('settings')" data-view="settings" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-xl text-sm font-medium text-slate-600" style="text-align:left"><span>⚙️</span> ตั้งค่า (Admin)</button>
+    </nav>
+
+    <div class="p-4 border-b border-slate-200 text-xs text-slate-600">
+      <p>ข้อมูลจากประชาชน + หน่วยงานราชการ</p>
+      <p style="margin-top:4px;color:#0e7490;font-weight:500">🌊 ข้อมูลน้ำจาก POPNIX Flood</p>
+      <p style="margin-top:2px;font-size:10px;color:#94a3b8;font-style:italic">⚠️ ไม่ใช่ประกาศทางการ</p>
+      <p style="margin-top:6px">© 2026 ThaiFlood Watch</p>
+    </div>
+  </aside>
+
+  <main class="flex-1 flex flex-col relative" style="min-width:0">
+    <header class="h-14 bg-white border-b border-slate-200 flex items-center z-10 shrink-0 safe-top" style="padding:0 6px;gap:2px">
+      <div class="flex items-center" style="flex-shrink:0;gap:2px">
+        <button onclick="openSidebar()" class="md-desktop-hidden p-2">☰</button>
+        <button onclick="switchView('map')" class="p-2" style="color:#0d9488">🏠</button>
+      </div>
+      <h2 id="page-title" class="font-semibold text-slate-800 text-sm" style="flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px">แผนที่หลัก</h2>
+      <div id="header-scroll">
+        <button onclick="toggleDarkMode()" id="btn-dark" class="p-2" style="flex-shrink:0">🌙</button>
+        <button onclick="locateMe()" class="p-2" style="flex-shrink:0">📍</button>
+        <button onclick="refreshAllData(true)" id="btn-refresh" class="p-2" style="flex-shrink:0">🔄</button>
+        <div id="layer-toggles" class="hidden md-desktop-hidden" style="display:none;gap:6px;align-items:center;flex-shrink:0">
+          <button onclick="toggleLayer('flooded')" id="btn-flooded" class="layer-btn active" style="padding:4px 8px;border-radius:6px;font-size:11px;background:#ccfbf1;color:#0f766e;white-space:nowrap;flex-shrink:0">น้ำท่วมขัง</button>
+          <button onclick="toggleLayer('risk')" id="btn-risk" class="layer-btn active" style="padding:4px 8px;border-radius:6px;font-size:11px;background:#fef3c7;color:#92400e;white-space:nowrap;flex-shrink:0">เสี่ยง</button>
+          <button onclick="toggleLayer('gates')" id="btn-gates" class="layer-btn active" style="padding:4px 8px;border-radius:6px;font-size:11px;background:#e0f2fe;color:#075985;white-space:nowrap;flex-shrink:0">ประตู</button>
+          <button onclick="toggleLayer('tele')" id="btn-tele" class="layer-btn active" style="padding:4px 8px;border-radius:6px;font-size:11px;background:#ede9fe;color:#6d28d9;white-space:nowrap;flex-shrink:0">คลอง</button>
+          <button onclick="toggleLayer('river')" id="btn-river" class="layer-btn active" style="padding:4px 8px;border-radius:6px;font-size:11px;background:#cffafe;color:#0e7490;white-space:nowrap;flex-shrink:0">เจ้าพระยา</button>
+          <button onclick="toggleLayer('reports')" id="btn-reports" class="layer-btn active" style="padding:4px 8px;border-radius:6px;font-size:11px;background:#fce7f3;color:#9d174d;white-space:nowrap;flex-shrink:0">รายงาน</button>
+        </div>
+        <button onclick="openAddModal()" id="btn-add" class="hidden" style="padding:6px 12px;background:linear-gradient(90deg,#14b8a6,#0ea5e9);color:#fff;border-radius:10px;font-size:12px;font-weight:500;white-space:nowrap;flex-shrink:0">➕ เพิ่ม</button>
+        <div id="admin-badge" class="hidden" style="padding:4px 8px;background:#fee2e2;color:#b91c1c;border-radius:8px;font-size:11px;white-space:nowrap;flex-shrink:0">🛡️ Admin</div>
+      </div>
+    </header>
+
+    <div class="flex-1 relative overflow-hidden">
+
+      <div id="view-map" class="absolute inset-0">
+        <div id="map"></div>
+        <div id="map-loading"><span class="spinner"></span> กำลังโหลดแผนที่...</div>
+
+        <div id="search-bar" class="absolute z-10" style="top:12px;left:12px;width:calc(100% - 24px);max-width:20rem">
+          <div style="background:rgba(255,255,255,.95);backdrop-filter:blur(4px);border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.1);display:flex;align-items:center;padding:2px">
+            <button onclick="searchPlace()" id="btn-search-icon" style="padding:0 6px 0 12px;color:#0d9488;background:none;border:none;cursor:pointer;font-size:18px">🔍</button>
+            <input id="search-input" type="text" placeholder="ค้นหาสถานที่... (กด Enter)" oninput="applyFilters()" onkeydown="if(event.key==='Enter'){event.preventDefault();searchPlace();}" style="flex:1;padding:10px 8px;border:none;background:transparent;font-size:14px">
+            <span id="search-loading" class="hidden" style="padding:6px 10px;font-size:14px;color:#0d9488">⏳</span>
+            <button onclick="clearSearch()" id="search-clear" class="hidden" style="padding:6px 10px;color:#94a3b8">✕</button>
+          </div>
+          <div id="search-results" class="hidden" style="margin-top:6px;background:rgba(255,255,255,.98);backdrop-filter:blur(4px);border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:14rem;overflow-y:auto"></div>
+          <div id="filter-chips" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+            <button onclick="toggleSeverityFilter(1)" data-sev="1" class="sev-chip" style="padding:2px 10px;border-radius:999px;font-size:11px;font-weight:500;background:#f1f5f9;color:#475569">1</button>
+            <button onclick="toggleSeverityFilter(2)" data-sev="2" class="sev-chip" style="padding:2px 10px;border-radius:999px;font-size:11px;font-weight:500;background:#e0f2fe;color:#0369a1">2</button>
+            <button onclick="toggleSeverityFilter(3)" data-sev="3" class="sev-chip" style="padding:2px 10px;border-radius:999px;font-size:11px;font-weight:500;background:#dbeafe;color:#1e40af">3</button>
+            <button onclick="toggleSeverityFilter(4)" data-sev="4" class="sev-chip" style="padding:2px 10px;border-radius:999px;font-size:11px;font-weight:500;background:#fef3c7;color:#92400e">4</button>
+            <button onclick="toggleSeverityFilter(5)" data-sev="5" class="sev-chip" style="padding:2px 10px;border-radius:999px;font-size:11px;font-weight:500;background:#fee2e2;color:#b91c1c">5</button>
+            <span id="filter-count" style="padding:2px 8px;font-size:11px;color:#64748b"></span>
+          </div>
+        </div>
+
+        <div id="legend" class="absolute z-10 md-desktop-hidden" style="bottom:96px;left:12px;background:rgba(255,255,255,.95);backdrop-filter:blur(4px);border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.1);padding:10px 12px;font-size:12px;max-width:220px">
+          <p style="font-weight:600;color:#334155;margin:0 0 6px">สัญลักษณ์</p>
+          <div style="display:flex;align-items:center;gap:6px;margin:2px 0"><span style="width:12px;height:12px;border-radius:50%;background:#3b82f6;border:1px solid #fff"></span> น้ำท่วมขัง</div>
+          <div style="display:flex;align-items:center;gap:6px;margin:2px 0"><span style="width:12px;height:12px;border-radius:50%;background:#f59e0b;border:1px solid #fff"></span> พื้นที่เสี่ยง</div>
+          <div style="display:flex;align-items:center;gap:6px;margin:2px 0"><span style="width:12px;height:12px;border-radius:50%;background:#0284c7;border:1px solid #fff"></span> ประตูระบาย</div>
+          <div style="display:flex;align-items:center;gap:6px;margin:2px 0"><span style="width:12px;height:12px;border-radius:50%;background:#7c3aed;border:1px solid #fff"></span> คลอง (POPNIX)</div>
+          <div style="display:flex;align-items:center;gap:6px;margin:2px 0"><span style="width:12px;height:12px;border-radius:50%;background:#06b6d4;border:1px solid #fff"></span> แม่น้ำเจ้าพระยา</div>
+          <div style="display:flex;align-items:center;gap:6px;margin:2px 0"><span style="width:12px;height:12px;border-radius:50%;background:#ec4899;border:1px solid #fff"></span> รายงานประชาชน</div>
+        </div>
+
+        <div id="quick-layers" class="absolute z-20" style="bottom:14px;left:50%;transform:translateX(-50%)">
+          <button onclick="switchView('flooded')" style="display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 10px;border-radius:10px;font-size:9px;color:#0f766e;background:#ccfbf1;white-space:nowrap;font-weight:600"><span style="font-size:16px">💧</span>น้ำท่วม</button>
+          <button onclick="switchView('risk')" style="display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 10px;border-radius:10px;font-size:9px;color:#92400e;background:#fef3c7;white-space:nowrap;font-weight:600"><span style="font-size:16px">⚠️</span>เสี่ยง</button>
+          <button onclick="switchView('gates')" style="display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 10px;border-radius:10px;font-size:9px;color:#075985;background:#e0f2fe;white-space:nowrap;font-weight:600"><span style="font-size:16px">🚪</span>ประตู</button>
+          <button onclick="switchView('situation')" style="display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 10px;border-radius:10px;font-size:9px;color:#475569;background:#f1f5f9;white-space:nowrap;font-weight:600"><span style="font-size:16px">📄</span>สถานการณ์</button>
+          <button onclick="switchView('weather')" style="display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 10px;border-radius:10px;font-size:9px;color:#475569;background:#f1f5f9;white-space:nowrap;font-weight:600"><span style="font-size:16px">🌤️</span>อากาศ</button>
+          <button onclick="switchView('alert')" style="display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 10px;border-radius:10px;font-size:9px;color:#475569;background:#f1f5f9;white-space:nowrap;font-weight:600"><span style="font-size:16px">🚨</span>เตือนภัย</button>
+        </div>
+      </div>
+
+      <div id="view-list" class="absolute inset-0 hidden" style="background:#f8fafc;overflow-y:auto;padding:16px">
+        <div style="max-width:64rem;margin:0 auto">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 id="list-title" class="text-lg font-bold">พื้นที่น้ำท่วมขัง</h3>
+            <button onclick="openAddModal()" style="padding:8px 14px;background:#14b8a6;color:#fff;border-radius:12px;font-size:14px">➕ เพิ่ม</button>
+          </div>
+          <div id="list-container" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px"></div>
+        </div>
+      </div>
+
+      <div id="view-situation" class="absolute inset-0 hidden" style="background:#f8fafc;overflow-y:auto;padding:16px">
+        <div style="max-width:64rem;margin:0 auto">
+          <h3 class="text-lg font-bold">สถานการณ์น้ำ</h3>
+          <p class="text-sm text-slate-600" style="margin:4px 0 16px">ข้อมูลจากหน่วยงานราชการ · POPNIX Flood</p>
+          <div style="background:#fff;border:1px solid #cffafe;border-radius:16px;padding:16px;margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <div><h4 class="font-semibold">🌊 ระดับน้ำคลอง (POPNIX Flood)</h4>
+                <p class="text-xs" style="color:#94a3b8;margin-top:2px">ไม่ใช่ประกาศทางการ · เครดิต: สำนักการระบายน้ำ กทม.</p></div>
+              <button onclick="forceReloadPopnix()" class="text-xs" style="color:#0891b2">🔄 รีเฟรช</button>
+            </div>
+            <div id="popnix-canals-summary" class="text-sm"><p class="text-slate-500">กำลังโหลด...</p></div>
+          </div>
+          <div style="background:#fff;border:1px solid #cffafe;border-radius:16px;padding:16px;margin-bottom:16px">
+            <h4 class="font-semibold" style="margin-bottom:8px">🏞️ แม่น้ำเจ้าพระยา (นครสวรรค์ → กรุงเทพฯ)</h4>
+            <p class="text-xs" style="color:#94a3b8;margin:0 0 12px">กรมชลประทาน / ปภ. ผ่าน POPNIX Flood</p>
+            <div id="popnix-river-summary" class="text-sm"><p class="text-slate-500">กำลังโหลด...</p></div>
+          </div>
+          <div style="background:#fff;border:1px solid #ccfbf1;border-radius:16px;padding:16px;margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <h4 class="font-semibold">🏞️ เขื่อนขนาดใหญ่ (กรมชลประทาน)</h4>
+              <button onclick="fetchRidDams(true)" class="text-xs" style="color:#0d9488">🔄 รีเฟรช</button>
+            </div>
+            <div id="rid-dams-content" class="text-sm"><div class="skeleton" style="height:3rem"></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
+            <a href="https://flood.pop.in.th" target="_blank" rel="noopener" style="background:#fff;border-radius:12px;padding:16px;border:1px solid #cffafe"><p class="font-medium text-sm">🌊 POPNIX Flood</p><p class="text-xs text-slate-600">ต้นทางข้อมูลน้ำท่วม</p></a>
+            <a href="https://www.thaiwater.net" target="_blank" rel="noopener" style="background:#fff;border-radius:12px;padding:16px;border:1px solid #e2e8f0"><p class="font-medium text-sm">ThaiWater</p><p class="text-xs text-slate-600">ระดับน้ำเขื่อน เรียลไทม์</p></a>
+            <a href="https://www.rid.go.th" target="_blank" rel="noopener" style="background:#fff;border-radius:12px;padding:16px;border:1px solid #e2e8f0"><p class="font-medium text-sm">กรมชลประทาน</p><p class="text-xs text-slate-600">อ่างเก็บน้ำ</p></a>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-weather" class="absolute inset-0 hidden" style="background:#f8fafc;overflow-y:auto;padding:16px">
+        <div style="max-width:64rem;margin:0 auto">
+          <h3 class="text-lg font-bold">วิเคราะห์สภาพอากาศ</h3>
+          <div style="background:#fff;border-radius:16px;border:1px solid #e0f2fe;padding:16px;margin:12px 0">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <h4 class="font-semibold">☁️ สภาพอากาศปัจจุบัน</h4>
+              <button onclick="fetchWeather(true)" class="text-xs" style="color:#0ea5e9">🔄 รีเฟรช</button>
+            </div>
+            <div id="weather-content" class="text-sm"><div class="skeleton" style="height:5rem"></div></div>
+          </div>
+          <div style="background:#fff;border-radius:16px;border:1px solid #cffafe;padding:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <h4 class="font-semibold">🌧️ ฝนสะสม กทม. (POPNIX)</h4>
+              <button onclick="loadPopnixRain()" class="text-xs" style="color:#0891b2">🔄 โหลด</button>
+            </div>
+            <div id="popnix-rain-content" class="text-sm"><p class="text-slate-500">กด "โหลด" เพื่อดึงข้อมูล</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-alert" class="absolute inset-0 hidden" style="background:#f8fafc;overflow-y:auto;padding:16px">
+        <div style="max-width:64rem;margin:0 auto">
+          <h3 class="text-lg font-bold">เตือนภัย</h3>
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:16px;padding:16px;margin:12px 0">
+            <h4 class="font-semibold" style="color:#991b1b;margin-bottom:12px">📞 สายด่วนฉุกเฉิน</h4>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">
+              <a href="tel:1784" style="display:flex;gap:8px;align-items:center;background:#fff;border-radius:12px;padding:12px"><strong style="color:#e11d48;font-size:18px">1784</strong><span class="text-xs">ปภ.</span></a>
+              <a href="tel:1555" style="display:flex;gap:8px;align-items:center;background:#fff;border-radius:12px;padding:12px"><strong style="color:#e11d48;font-size:18px">1555</strong><span class="text-xs">กทม.</span></a>
+              <a href="tel:1669" style="display:flex;gap:8px;align-items:center;background:#fff;border-radius:12px;padding:12px"><strong style="color:#e11d48;font-size:18px">1669</strong><span class="text-xs">แพทย์</span></a>
+              <a href="tel:1460" style="display:flex;gap:8px;align-items:center;background:#fff;border-radius:12px;padding:12px"><strong style="color:#0ea5e9;font-size:18px">1460</strong><span class="text-xs">ชลประทาน</span></a>
+              <a href="tel:1182" style="display:flex;gap:8px;align-items:center;background:#fff;border-radius:12px;padding:12px"><strong style="color:#0ea5e9;font-size:18px">1182</strong><span class="text-xs">อุตุฯ</span></a>
+              <a href="tel:191" style="display:flex;gap:8px;align-items:center;background:#fff;border-radius:12px;padding:12px"><strong style="font-size:18px">191</strong><span class="text-xs">ตำรวจ</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-settings" class="absolute inset-0 hidden" style="background:#f8fafc;overflow-y:auto;padding:16px">
+        <div style="max-width:48rem;margin:0 auto">
+          <div id="login-panel" style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;padding:24px">
+            <div style="text-align:center;margin-bottom:20px">
+              <div style="width:56px;height:56px;margin:0 auto 12px;border-radius:16px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:22px">🔒</div>
+              <h3 class="text-lg font-bold">เข้าสู่ระบบ Admin</h3>
+              <p class="text-sm text-slate-600" style="margin-top:4px">เฉพาะผู้ดูแลระบบ</p>
+            </div>
+            <input type="password" id="admin-password" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')loginAdmin()" style="width:100%;padding:10px 16px;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:12px">
+            <button onclick="loginAdmin()" style="width:100%;padding:10px;background:linear-gradient(90deg,#14b8a6,#0ea5e9);color:#fff;border-radius:12px;font-weight:500">เข้าสู่ระบบ</button>
+            <p class="text-xs" style="text-align:center;color:#94a3b8;margin-top:14px">รหัสเริ่มต้น: admin123</p>
+          </div>
+          <div id="admin-panel" class="hidden" style="display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <h3 class="text-lg font-bold">ตั้งค่าระบบ</h3>
+              <button onclick="logoutAdmin()" style="font-size:14px;color:#e11d48">ออกจากระบบ</button>
+            </div>
+
+            <div style="background:#fff;border-radius:16px;border:2px solid #0891b2;padding:16px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div><h4 class="font-semibold">🌊 POPNIX Flood Data</h4>
+                  <p class="text-xs text-slate-600" style="margin-top:2px">แหล่งข้อมูลน้ำท่วม · ไม่ใช่ประกาศทางการ</p></div>
+                <button onclick="forceReloadPopnix()" style="padding:6px 10px;background:#0891b2;color:#fff;border-radius:8px;font-size:11px">โหลดใหม่</button>
+              </div>
+              <div id="popnix-status-list" class="text-sm"></div>
+              <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9;font-size:11px;color:#64748b">
+                <p id="popnix-last-update">อัปเดตล่าสุด: -</p>
+                <p style="margin-top:4px;font-style:italic">ข้อมูล: สำนักการระบายน้ำ กทม. / กรมชลประทาน ผ่าน POPNIX Flood (flood.pop.in.th)</p>
+              </div>
+              <button onclick="testPopnixIntegration()" style="margin-top:12px;width:100%;padding:10px;background:#0e7490;color:#fff;border-radius:10px;font-size:13px;font-weight:500">🧪 ทดสอบการเชื่อมต่อ POPNIX</button>
+              <div id="popnix-test-results" style="margin-top:10px;font-size:11px"></div>
+            </div>
+
+            <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;padding:16px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <h4 class="font-semibold">🏢 หน่วยงาน</h4>
+                <button onclick="openAgencyModal()" style="padding:6px 12px;background:#14b8a6;color:#fff;border-radius:8px;font-size:13px">➕ เพิ่ม</button>
+              </div>
+              <div id="agencies-list"></div>
+            </div>
+
+            <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;padding:16px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <h4 class="font-semibold">🔌 API</h4>
+                <button onclick="openApiModal()" style="padding:6px 12px;background:#6366f1;color:#fff;border-radius:8px;font-size:13px">➕ เพิ่ม</button>
+              </div>
+              <div id="apis-list"><p class="text-sm text-slate-600">ยังไม่มี API</p></div>
+            </div>
+
+            <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;padding:16px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div><h4 class="font-semibold">📡 สถานะแหล่งข้อมูลน้ำ</h4>
+                  <p class="text-xs text-slate-600" style="margin-top:2px">POPNIX (หลัก) → ThaiWater/BMA (สำรอง)</p></div>
+                <button onclick="forceReloadTelemetry()" style="padding:6px 10px;background:#6366f1;color:#fff;border-radius:8px;font-size:11px">โหลดใหม่</button>
+              </div>
+              <div id="tele-status-list" class="text-sm"></div>
+              <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9;font-size:11px;color:#64748b">
+                <p id="tele-total">จำนวนสถานีทั้งหมด: -</p>
+                <p id="tele-last-update" style="margin-top:2px">อัปเดตล่าสุด: -</p>
+              </div>
+            </div>
+
+            <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;padding:16px">
+              <h4 class="font-semibold" style="margin-bottom:8px">🔑 เปลี่ยนรหัสผ่าน</h4>
+              <button onclick="openChangePasswordModal()" style="padding:10px 20px;background:#f59e0b;color:#fff;border-radius:12px;font-size:14px;font-weight:500">เปลี่ยนรหัสผ่าน</button>
+            </div>
+
+            <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;padding:16px">
+              <h4 class="font-semibold" style="margin-bottom:8px">🐞 Debug / ระบบ</h4>
+              <button onclick="showDiagnostics()" style="padding:10px 20px;background:#6366f1;color:#fff;border-radius:12px;font-size:14px;font-weight:500">ดูข้อมูลระบบ</button>
+              <button onclick="runDebugTest()" style="padding:10px 20px;background:#475569;color:#fff;border-radius:12px;font-size:14px;font-weight:500;margin-left:6px">ทดสอบ API</button>
+              <div id="debug-results" style="margin-top:12px;font-family:monospace;font-size:11px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODALS -->
+<div id="modal" class="hidden modal-backdrop" style="position:fixed;inset:0;z-index:500;display:flex;align-items:flex-end;justify-content:center">
+  <div style="background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:32rem;max-height:90vh;overflow-y:auto">
+    <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center">
+      <h3 id="modal-title" class="font-semibold">เพิ่มข้อมูล</h3>
+      <button onclick="closeModal()" style="color:#94a3b8;padding:4px">✕</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <select id="form-type" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0">
+        <option value="flooded">พื้นที่น้ำท่วมขัง</option><option value="risk">พื้นที่เสี่ยงน้ำท่วม</option><option value="gates">ประตูระบายน้ำ</option>
+      </select>
+      <input type="text" id="form-name" placeholder="ชื่อ / สถานที่" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0">
+      <textarea id="form-desc" rows="2" placeholder="รายละเอียด" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0"></textarea>
+      <select id="form-severity" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0">
+        <option value="1">1 - เล็กน้อย</option><option value="2">2 - ปานกลาง</option><option value="3" selected>3 - รุนแรง</option><option value="4">4 - วิกฤต</option><option value="5">5 - ฉุกเฉิน</option>
+      </select>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <input type="number" step="any" id="form-lat" placeholder="lat" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0">
+        <input type="number" step="any" id="form-lng" placeholder="lng" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0">
+      </div>
+      <button onclick="locateMe(true)" style="padding:10px;background:#f1f5f9;border-radius:12px;font-size:14px">📍 ใช้ตำแหน่งปัจจุบัน</button>
+      <input type="file" id="form-photo" accept="image/*" capture="environment" style="width:100%;font-size:13px">
+      <div id="photo-preview" class="hidden" style="margin-top:8px"><img id="photo-preview-img" style="height:96px;border-radius:12px;object-fit:cover"></div>
+      <input type="text" id="form-reporter" placeholder="ผู้รายงาน" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0">
+    </div>
+    <div style="padding:16px 20px;background:#f8fafc;display:flex;justify-content:flex-end;gap:12px">
+      <button onclick="closeModal()" style="padding:8px 16px;border-radius:12px;font-size:14px">ยกเลิก</button>
+      <button onclick="saveData()" style="padding:8px 20px;background:#14b8a6;color:#fff;border-radius:12px;font-size:14px">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div id="agency-modal" class="hidden modal-backdrop" style="position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;border-radius:16px;padding:20px;width:100%;max-width:28rem">
+    <h3 class="font-semibold" style="margin:0 0 12px">เพิ่มหน่วยงาน</h3>
+    <input type="text" id="agency-name" placeholder="ชื่อ" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:10px">
+    <select id="agency-type" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:10px">
+      <option value="agency">หน่วยงานราชการ</option><option value="org">องค์กร</option><option value="person">บุคคล</option>
+    </select>
+    <input type="text" id="agency-link" placeholder="https://..." style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0">
+    <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:16px">
+      <button onclick="closeAgencyModal()" style="padding:8px 16px;border-radius:12px">ยกเลิก</button>
+      <button onclick="saveAgency()" style="padding:8px 20px;background:#14b8a6;color:#fff;border-radius:12px">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div id="api-modal" class="hidden modal-backdrop" style="position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;border-radius:16px;padding:20px;width:100%;max-width:32rem">
+    <h3 id="api-modal-title" class="font-semibold" style="margin:0 0 12px">เพิ่ม API</h3>
+    <input type="text" id="api-name" placeholder="ชื่อ API" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:10px">
+    <input type="text" id="api-url" placeholder="Endpoint URL" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:10px">
+    <input type="text" id="api-key" placeholder="API Key" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:10px">
+    <select id="api-type" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0">
+      <option value="water">สถานการณ์น้ำ</option><option value="weather">สภาพอากาศ</option><option value="alert">เตือนภัย</option><option value="other">อื่น ๆ</option>
+    </select>
+    <textarea id="api-note" rows="2" placeholder="หมายเหตุ" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0;margin-top:10px"></textarea>
+    <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:16px">
+      <button onclick="closeApiModal()" style="padding:8px 16px;border-radius:12px">ยกเลิก</button>
+      <button onclick="saveApi()" style="padding:8px 20px;background:#6366f1;color:#fff;border-radius:12px">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div id="password-modal" class="hidden modal-backdrop" style="position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;border-radius:16px;padding:20px;width:100%;max-width:28rem">
+    <h3 class="font-semibold" style="margin:0 0 12px">เปลี่ยนรหัสผ่าน</h3>
+    <input type="password" id="pw-current" placeholder="รหัสปัจจุบัน" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:10px">
+    <input type="password" id="pw-new" placeholder="รหัสใหม่" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:10px">
+    <input type="password" id="pw-confirm" placeholder="ยืนยันรหัสใหม่" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0">
+    <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:16px">
+      <button onclick="closeChangePasswordModal()" style="padding:8px 16px;border-radius:12px">ยกเลิก</button>
+      <button onclick="changePassword()" style="padding:8px 20px;background:#f59e0b;color:#fff;border-radius:12px">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP SCRIPT -->
+<script>
+/* ═══ Platform + Storage ═══ */
+var TFPlatform = {
+  isWebView: /wv|WebView|Acode/i.test(navigator.userAgent),
+  isFileProtocol: location.protocol === 'file:',
+  isLocalhost: /localhost|127\.0\.0\.1|192\.168/.test(location.host),
+  isSecure: location.protocol === 'https:' || /localhost|127\.0\.0\.1/.test(location.host),
+  hasClipboard: !!(navigator.clipboard && window.isSecureContext),
+  hasShare: !!navigator.share,
+  hasGeo: !!navigator.geolocation,
+  hasStorage: (function() { try { localStorage.setItem('__t', '1'); localStorage.removeItem('__t'); return true; } catch (e) { return false; } })()
+};
+
+var TFStorage = (function() {
+  var mem = {};
+  var storage = TFPlatform.hasStorage ? localStorage : {
+    getItem: function(k) { return mem[k] != null ? mem[k] : null; },
+    setItem: function(k, v) { mem[k] = String(v); },
+    removeItem: function(k) { delete mem[k]; }
+  };
+  return {
+    get: function(key, fallback) { try { var v = storage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } },
+    set: function(key, value) { try { storage.setItem(key, JSON.stringify(value)); return true; } catch (e) { return false; } },
+    getRaw: function(key) { try { return storage.getItem(key); } catch (e) { return null; } },
+    setRaw: function(key, val) { try { storage.setItem(key, val); return true; } catch (e) { return false; } },
+    remove: function(key) { try { storage.removeItem(key); } catch (e) {} }
+  };
+})();
+
+async function tfCopy(text) {
+  if (TFPlatform.hasClipboard) { try { await navigator.clipboard.writeText(text); return true; } catch (e) {} }
+  try { var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); var ok = document.execCommand('copy'); document.body.removeChild(ta); if (ok) return true; } catch (e) {}
+  prompt('คัดลอกข้อความ:', text); return false;
+}
+
+function tfReadImage(file, maxDim, quality) {
+  maxDim = maxDim || 800; quality = quality || 0.7;
+  return new Promise(function(resolve, reject) {
+    if (!file) return resolve(null);
+    if (file.type.indexOf('image/') !== 0) return reject(new Error('ต้องเป็นรูปภาพ'));
+    var reader = new FileReader();
+    reader.onerror = function() { reject(new Error('อ่านไฟล์ไม่สำเร็จ')); };
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onerror = function() { reject(new Error('โหลดรูปไม่สำเร็จ')); };
+      img.onload = function() {
+        try {
+          var w = img.width, h = img.height;
+          if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+          var c = document.createElement('canvas'); c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(c.toDataURL('image/jpeg', quality));
+        } catch (err) { reject(err); }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function showDiagnostics() {
+  var popnix = TFStorage.get('popnix_meta', null);
+  alert([
+    'UA: ' + navigator.userAgent,
+    'URL: ' + location.href,
+    'isLocalhost: ' + TFPlatform.isLocalhost,
+    'Leaflet: ' + (typeof L !== 'undefined' ? 'v' + L.version : 'X'),
+    'MapMode: ' + mapMode,
+    'POPNIX: ' + (popnix ? 'canals=' + popnix.canals + ' river=' + popnix.river + ' reports=' + popnix.reports : 'no data'),
+    'Errors: ' + window.__TF.errors.length
+  ].join('\n'));
+}
+
+function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
+function isGovReporter(r) { return /กทม\.|กรมชลประทาน|ปภ\.|สทนช\.|ThaiWater|BMA|สำนักการระบายน้ำ|POPNIX/.test(String(r || '')); }
+function govBadge(r) { return isGovReporter(r) ? '<span class="gov-badge" title="หน่วยงาน">🏛️</span> ' : ''; }
+
+async function fetchWithRetry(url, opts, retries, timeout) {
+  opts = opts || {}; retries = retries == null ? 2 : retries; timeout = timeout || 6000;
+  for (var i = 0; i <= retries; i++) {
+    var c = new AbortController(), t = setTimeout(function() { c.abort(); }, timeout);
+    try {
+      var r = await fetch(url, Object.assign({}, opts, { signal: c.signal }));
+      clearTimeout(t);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r;
+    } catch (e) {
+      clearTimeout(t);
+      if (i === retries) throw e;
+      await new Promise(function(rs) { setTimeout(rs, 500 * (i + 1)); });
+    }
+  }
+}
+
+async function fetchWithTimeout(url, ms) {
+  var c = new AbortController();
+  var t = setTimeout(function() { c.abort(); }, ms);
+  try {
+    var r = await fetch(url, { signal: c.signal, headers: { 'Accept': 'application/json' } });
+    clearTimeout(t);
+    return r;
+  } catch (e) { clearTimeout(t); throw e; }
+}
+
+/* ═══ POPNIX Config ═══ */
+var POPNIX = {
+  base: 'https://flood.pop.in.th',
+  /* ตรวจสอบ localhost → ปิด POPNIX (CORS policy) */
+  isBlocked: function() { return TFPlatform.isLocalhost || TFPlatform.isFileProtocol; },
+  cacheTTL: { overview: 2*60*1000, river: 2*60*1000, reports: 5*60*1000, rain: 10*60*1000 },
+  credit: 'ข้อมูล: สำนักการระบายน้ำ กทม. / กรมชลประทาน ผ่าน POPNIX Flood (flood.pop.in.th)',
+  disclaimer: 'ไม่ใช่ประกาศทางการ'
+};
+
+function popnixCacheGet(key, ttl) {
+  try { var c = TFStorage.get('popnix_cache_' + key, null); if (!c || !c.ts) return null; if (Date.now() - c.ts > ttl) return null; return c.data; } catch (e) { return null; }
+}
+function popnixCacheSet(key, data) { try { TFStorage.set('popnix_cache_' + key, { ts: Date.now(), data: data }); } catch (e) {} }
+
+/* ⭐ แก้ไข: ถ้าเป็น localhost → ข้าม POPNIX ทันที */
+async function loadPopnixData(force) {
+  var result = { success: false, canals: 0, river: 0, reports: 0, errors: [], skipped: false };
+
+  /* ตรวจสอบ localhost */
+  if (POPNIX.isBlocked()) {
+    result.skipped = true;
+    result.errors.push('POPNIX ถูกบล็อกจาก localhost (CORS policy) — ใช้แหล่งสำรอง');
+    tfLog('POPNIX: skipped on localhost — using ThaiWater/BMA/seed', false);
+    TFStorage.set('popnix_meta', {
+      lastFetch: Date.now(), ok: false, skipped: true,
+      canals: 0, river: 0, reports: 0, errors: result.errors
+    });
+    return result;
+  }
+
+  if (!force) {
+    var meta = TFStorage.get('popnix_meta', null);
+    if (meta && meta.lastFetch && !meta.skipped && (Date.now() - meta.lastFetch) < 60000) return meta;
+  }
+
+  var t0 = performance.now();
+  var endpoints = {
+    overview: ['/api_overview.php?w=60', '/api/overview?w=60', '/overview?w=60'],
+    river: ['/api_river.php', '/api/river', '/river'],
+    reports: ['/api_reports.php', '/api/reports', '/reports']
+  };
+
+  for (var type in endpoints) {
+    var paths = endpoints[type];
+    var cachedPath = TFStorage.getRaw('popnix_path_' + type);
+    var tryList = cachedPath ? [cachedPath].concat(paths) : paths;
+    var seen = {};
+    for (var i = 0; i < tryList.length; i++) {
+      var path = tryList[i];
+      if (seen[path]) continue;
+      seen[path] = true;
+      try {
+        var r = await fetchWithTimeout(POPNIX.base + path, 4000);
+        if (!r.ok) continue;
+        var j = await r.json();
+        if (j && (Array.isArray(j.stations) || Array.isArray(j.reports))) {
+          TFStorage.setRaw('popnix_path_' + type, path);
+          popnixCacheSet(type, j);
+          if (type === 'overview') { var c = adaptPopnixCanals(j); if (c.length) { var np = (data.tele || []).filter(function(i){return i.source!=='popnix_canal';}); data.tele = np.concat(c); result.canals = c.length; result.summary = j.summary; } }
+          else if (type === 'river') { var rv = adaptPopnixRiver(j); data.river = rv; result.river = rv.length; }
+          else if (type === 'reports') { var rp = adaptPopnixReports(j); data.reports = rp; result.reports = rp.length; }
+          break;
+        }
+      } catch (e) { /* ลอง path ถัดไป */ }
+    }
+  }
+
+  result.success = (result.canals > 0) || (result.river > 0) || (result.reports > 0);
+  result.duration = Math.round(performance.now() - t0);
+  data._v = (data._v || 0) + 1;
+  TFStorage.set('thaiflood_data', data);
+  TFStorage.set('popnix_meta', {
+    lastFetch: Date.now(), ok: result.success, skipped: false,
+    canals: result.canals, river: result.river, reports: result.reports,
+    summary: result.summary || null, errors: result.errors, duration: result.duration
+  });
+  return result;
+}
+
+function adaptPopnixCanals(j) {
+  if (!j || !Array.isArray(j.stations)) return [];
+  var latest = (j.summary && j.summary.latest) || '';
+  var sevMap = { crit: 4, warn: 3, ok: 2, unk: 1, none: 1 };
+  return j.stations.map(function(s) {
+    var lat = parseFloat(s.lat), lng = parseFloat(s.lng);
+    if (isNaN(lat) || isNaN(lng)) return null;
+    var trendIcon = s.trend === 'up' ? '↑' : s.trend === 'down' ? '↓' : '→';
+    return {
+      id: 'popnix-canal-' + s.id, sourceId: 'popnix-canal-' + s.id,
+      name: s.name || ('สถานี #' + s.id),
+      desc: (s.river ? s.river + ' · ' : '') + 'ระดับ ' + (s.wl != null ? s.wl : '-') + ' ม.รทก. ' + trendIcon,
+      lat: lat, lng: lng,
+      reporter: 'สำนักการระบายน้ำ กทม. / POPNIX Flood',
+      severity: sevMap[s.level] || 2, status: 'approved',
+      time: s.measured_at || latest,
+      createdAt: Date.parse(s.measured_at) || Date.now(),
+      source: 'popnix_canal', type: 'tele',
+      online: !!s.online, wl: s.wl, warn: s.warn, crit: s.crit,
+      level: s.level, trend: s.trend, isPopnix: true
+    };
+  }).filter(Boolean);
+}
+
+function adaptPopnixRiver(j) {
+  if (!j || !Array.isArray(j.stations)) return [];
+  return j.stations.map(function(s) {
+    var lat = parseFloat(s.lat), lng = parseFloat(s.lng);
+    if (isNaN(lat) || isNaN(lng)) return null;
+    var sit = parseInt(s.situation) || 2;
+    var diffText = '';
+    if (s.diff != null && !isNaN(s.diff)) diffText = ' (' + (s.diff >= 0 ? '+' : '') + Number(s.diff).toFixed(2) + ' จากตลิ่ง)';
+    return {
+      id: 'popnix-river-' + (s.code || s.name), sourceId: 'popnix-river-' + (s.code || s.name),
+      name: s.name || ('สถานี #' + (s.code || '?')),
+      desc: 'ระดับ ' + (s.wl != null ? Number(s.wl).toFixed(2) + ' ม.รทก.' : '-') + diffText + (s.agency ? ' · ' + s.agency : ''),
+      lat: lat, lng: lng,
+      reporter: 'กรมชลประทาน / ปภ. ผ่าน POPNIX Flood',
+      severity: Math.min(5, Math.max(1, sit)), status: 'approved',
+      time: s.measured_at || '', createdAt: Date.parse(s.measured_at) || Date.now(),
+      source: 'popnix_river', type: 'river',
+      wl: s.wl, bank: s.bank, diff: s.diff,
+      situation: sit, trend: s.trend, agency: s.agency, basin: s.basin, order: s.order, isPopnix: true
+    };
+  }).filter(Boolean).sort(function(a, b) { return (a.order || 0) - (b.order || 0); });
+}
+
+function adaptPopnixReports(j) {
+  if (!j || !Array.isArray(j.reports)) return [];
+  var depthLabels = ['แห้ง', '≤10 ซม.', '10–25 ซม.', '25–50 ซม.', '>50 ซม.'];
+  return j.reports.map(function(r, i) {
+    var lat = parseFloat(r.lat), lng = parseFloat(r.lng);
+    if (isNaN(lat) || isNaN(lng)) return null;
+    var depth = parseInt(r.depth) || 0;
+    return {
+      id: 'popnix-report-' + (r.cell || i), sourceId: 'popnix-report-' + (r.cell || i),
+      name: 'รายงานประชาชน · ' + (r.district || 'ไม่ทราบเขต'),
+      desc: 'ระดับน้ำ: ' + (depthLabels[depth] || 'ไม่ทราบ') + ' · ' + (r.n || 1) + ' รายงาน',
+      lat: lat, lng: lng,
+      reporter: 'ประชาชนรายงาน ผ่าน POPNIX Flood',
+      severity: depth === 0 ? 1 : depth + 1, status: 'approved',
+      time: r.last || '', createdAt: Date.parse(r.last) || Date.now(),
+      source: 'popnix_reports', type: 'reports',
+      depth: depth, count: r.n || 1, cell: r.cell, isPopnix: true
+    };
+  }).filter(Boolean);
+}
+
+async function loadPopnixRain() {
+  var el = document.getElementById('popnix-rain-content'); if (!el) return;
+  if (POPNIX.isBlocked()) {
+    el.innerHTML = '<p style="color:#64748b">⚠️ POPNIX ไม่สามารถเข้าถึงได้จาก localhost — ใช้ได้เมื่อ deploy จริง</p>';
+    return;
+  }
+  el.innerHTML = '<p style="color:#94a3b8">กำลังโหลด...</p>';
+  try {
+    var cached = popnixCacheGet('rain', POPNIX.cacheTTL.rain);
+    if (!cached) {
+      var r = await fetchWithTimeout(POPNIX.base + '/api_rain.php', 6000);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      cached = await r.json();
+      popnixCacheSet('rain', cached);
+    }
+    var list = (cached && (cached.stations || cached.data)) || [];
+    if (!Array.isArray(list) || !list.length) { el.innerHTML = '<p style="color:#64748b">ไม่พบข้อมูลฝน</p>'; return; }
+    list = list.slice().sort(function(a, b) { return (parseFloat(b.r24h) || 0) - (parseFloat(a.r24h) || 0); }).slice(0, 20);
+    el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;max-height:20rem;overflow-y:auto">'
+      + list.map(function(s) {
+        var r24 = parseFloat(s.r24h) || 0;
+        var clr = r24 > 60 ? '#e11d48' : r24 > 30 ? '#d97706' : r24 > 10 ? '#0ea5e9' : '#64748b';
+        return '<div style="padding:10px;background:#f0f9ff;border-radius:12px">'
+          + '<p style="font-size:12px;font-weight:500;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(s.name || '-') + '</p>'
+          + '<p style="font-size:13px;color:' + clr + ';font-weight:600;margin:4px 0 0">' + r24.toFixed(1) + ' มม./24ชม.</p></div>';
+      }).join('') + '</div>';
+  } catch (e) { el.innerHTML = '<p style="color:#e11d48">โหลดไม่ได้: ' + escapeHtml(e.message) + '</p>'; }
+}
+
+function renderPopnixStatus() {
+  var el = document.getElementById('popnix-status-list'); if (!el) return;
+  var meta = TFStorage.get('popnix_meta', null);
+  if (!meta) { el.innerHTML = '<p style="color:#94a3b8;font-size:13px">ยังไม่มีข้อมูล</p>'; }
+  else if (meta.skipped) {
+    el.innerHTML = '<div style="padding:12px;background:#fef3c7;border-radius:10px;font-size:12px;color:#92400e;line-height:1.5">'
+      + '<b>⚠️ POPNIX ถูกข้าม (localhost)</b><br>'
+      + 'POPNIX Flood API ไม่อนุญาตให้เรียกจาก localhost/LAN<br>'
+      + '→ ระบบใช้แหล่งสำรอง: ThaiWater + BMA + seed data'
+      + '</div>';
+  } else {
+    var rows = [
+      ['🌊 Canals', meta.canals, meta.canals > 0],
+      ['🏞️ River', meta.river, meta.river > 0],
+      ['👥 Reports', meta.reports, meta.reports >= 0]
+    ];
+    el.innerHTML = rows.map(function(r) {
+      return '<div style="display:flex;justify-content:space-between;padding:10px 12px;background:#f8fafc;border-radius:10px;margin-bottom:6px;align-items:center">'
+        + '<div><p style="font-size:13px;font-weight:500;margin:0">' + r[0] + '</p>'
+        + '<p style="font-size:11px;color:#64748b;margin:2px 0 0">' + (r[1] || 0) + ' รายการ</p></div>'
+        + '<span style="font-size:11px;font-weight:600;color:' + (r[2] ? '#0891b2' : '#d97706') + '">' + (r[2] ? '✓' : '⚠️') + '</span></div>';
+    }).join('');
+    if (meta.errors && meta.errors.length) {
+      el.innerHTML += '<div style="margin-top:8px;padding:8px;background:#fef3c7;border-radius:8px;font-size:11px;color:#92400e">⚠️ ' + meta.errors.map(escapeHtml).join('<br>⚠️ ') + '</div>';
+    }
+  }
+  var u = document.getElementById('popnix-last-update');
+  if (u) {
+    u.textContent = meta ? (meta.skipped ? 'ข้าม POPNIX (localhost)' : 'อัปเดตล่าสุด: ' + new Date(meta.lastFetch).toLocaleString('th-TH') + (meta.duration ? ' · ' + meta.duration + 'ms' : '')) : 'อัปเดตล่าสุด: -';
+  }
+}
+
+async function forceReloadPopnix() {
+  showToast('กำลังโหลด POPNIX...');
+  ['overview', 'river', 'reports', 'rain'].forEach(function(k) { TFStorage.remove('popnix_cache_' + k); });
+  ['overview', 'river', 'reports', 'rain'].forEach(function(k) { TFStorage.remove('popnix_path_' + k); });
+  var r = await loadPopnixData(true);
+  renderMarkers();
+  renderPopnixStatus();
+  renderTelemetryStatus();
+  updatePopnixSummaries();
+  if (r.skipped) showToast('POPNIX ถูกข้าม (localhost) — ใช้แหล่งสำรอง');
+  else showToast(r.success ? 'POPNIX: คลอง ' + r.canals + ' · แม่น้ำ ' + r.river + ' · รายงาน ' + r.reports : 'POPNIX ล้มเหลว');
+}
+
+function updatePopnixSummaries() {
+  var meta = TFStorage.get('popnix_meta', null);
+  var elC = document.getElementById('popnix-canals-summary');
+  var elR = document.getElementById('popnix-river-summary');
+
+  if (elC) {
+    if (!meta || meta.skipped || !meta.canals) {
+      var canals = (data.tele || []).filter(function(t) { return t.source === 'popnix_canal'; }).length;
+      if (canals > 0) {
+        elC.innerHTML = '<p style="color:#64748b">มี ' + canals + ' สถานีจาก POPNIX (แคช)</p>';
+      } else {
+        elC.innerHTML = '<p style="color:#64748b">ยังไม่มีข้อมูล — ใช้แหล่งสำรองจาก ThaiWater/BMA</p>';
+      }
+    } else {
+      var s = meta.summary || {};
+      elC.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px">'
+        + '<div style="padding:10px;background:#f0f9ff;border-radius:10px;text-align:center"><p style="font-size:20px;font-weight:700;color:#0369a1;margin:0">' + (s.stations || meta.canals) + '</p><p style="font-size:11px;color:#64748b;margin:2px 0 0">สถานี</p></div>'
+        + '<div style="padding:10px;background:#dcfce7;border-radius:10px;text-align:center"><p style="font-size:20px;font-weight:700;color:#166534;margin:0">' + (s.online || '-') + '</p><p style="font-size:11px;color:#64748b;margin:2px 0 0">ออนไลน์</p></div>'
+        + '<div style="padding:10px;background:#fef3c7;border-radius:10px;text-align:center"><p style="font-size:20px;font-weight:700;color:#92400e;margin:0">' + (s.warn || 0) + '</p><p style="font-size:11px;color:#64748b;margin:2px 0 0">เตือน</p></div>'
+        + '<div style="padding:10px;background:#fee2e2;border-radius:10px;text-align:center"><p style="font-size:20px;font-weight:700;color:#991b1b;margin:0">' + (s.crit || 0) + '</p><p style="font-size:11px;color:#64748b;margin:2px 0 0">วิกฤต</p></div>'
+        + '</div><p style="margin-top:10px;font-size:11px;color:#94a3b8">อัปเดตล่าสุด: ' + (s.latest || '-') + '</p>';
+    }
+  }
+
+  if (elR) {
+    if (!meta || meta.skipped || !meta.river) {
+      var river = (data.river || []).length;
+      if (river > 0) elR.innerHTML = '<p style="color:#64748b">มี ' + river + ' สถานีจาก POPNIX (แคช)</p>';
+      else elR.innerHTML = '<p style="color:#64748b">ยังไม่มีข้อมูล — ใช้ seed data (เจ้าพระยา)</p>';
+    } else {
+      var rv = (data.river || []).slice(0, 12);
+      elR.innerHTML = '<div style="max-height:14rem;overflow-y:auto">'
+        + rv.map(function(s) {
+          var diff = s.diff;
+          var clr = diff != null && diff >= 0 ? '#e11d48' : (diff != null && diff > -1 ? '#d97706' : '#0891b2');
+          var diffTxt = (diff != null) ? ((diff >= 0 ? '+' : '') + Number(diff).toFixed(2)) : '-';
+          return '<div style="display:flex;justify-content:space-between;padding:8px 10px;background:#f0f9ff;border-radius:10px;margin-bottom:4px">'
+            + '<div style="min-width:0;flex:1"><p style="font-size:12px;font-weight:500;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(s.name) + '</p>'
+            + '<p style="font-size:10px;color:#64748b;margin:2px 0 0">' + escapeHtml(s.agency || '') + '</p></div>'
+            + '<div style="text-align:right"><p style="font-size:12px;font-weight:600;color:' + clr + ';margin:0">' + diffTxt + ' ม.</p></div></div>';
+        }).join('') + '</div>';
+    }
+  }
+}
+
+async function testPopnixIntegration() {
+  var el = document.getElementById('popnix-test-results'); if (!el) return;
+  el.innerHTML = '';
+  var log = [];
+  function addLine(icon, msg, bg) { log.push('<div style="padding:5px 8px;background:' + (bg || '#f8fafc') + ';border-radius:6px;margin:3px 0;font-size:11px">' + icon + ' ' + msg + '</div>'); el.innerHTML = log.join(''); }
+  addLine('⏱️', 'เริ่ม ' + new Date().toLocaleTimeString('th-TH'), '#e0f2fe');
+  addLine('ℹ️', 'Origin: ' + location.origin, '#e0f2fe');
+  if (POPNIX.isBlocked()) {
+    addLine('⚠️', 'localhost detected → POPNIX ถูกบล็อก (CORS)', '#fef3c7');
+    addLine('ℹ️', 'บน production POPNIX จะทำงานได้ตามปกติ', '#f1f5f9');
+    addLine('✓', 'ระบบใช้แหล่งสำรอง: ThaiWater + BMA + seed', '#f0fdfa');
+  } else {
+    var endpoints = ['/api_overview.php?w=60', '/api_river.php', '/api_reports.php'];
+    for (var i = 0; i < endpoints.length; i++) {
+      try {
+        var t1 = performance.now();
+        var r = await fetchWithTimeout(POPNIX.base + endpoints[i], 6000);
+        var dt = Math.round(performance.now() - t1);
+        if (r.ok) addLine('✓', endpoints[i] + ' → HTTP ' + r.status + ' (' + dt + 'ms)', '#f0fdfa');
+        else addLine('✗', endpoints[i] + ' → HTTP ' + r.status + ' (' + dt + 'ms)', '#fef2f2');
+      } catch (e) { addLine('✗', endpoints[i] + ' → ' + e.message, '#fef2f2'); }
+    }
+  }
+  addLine('⏱️', 'รวม: ' + Math.round(performance.now() - t0) + 'ms', '#e0f2fe');
+}
+
+/* ═══ State ═══ */
+var map = null;
+var mapMode = 'none';
+var markers = { flooded: [], risk: [], gates: [], tele: [], river: [], reports: [] };
+var layerGroups = { flooded: null, risk: null, gates: null, tele: null, river: null, reports: null };
+var layersVisible = { flooded: true, risk: true, gates: true, tele: true, river: true, reports: true };
+var currentView = 'map';
+var editingId = null;
+var isAdmin = false;
+var clickLatLng = null;
+var editingApiId = null;
+var searchQuery = '';
+var severityFilter = new Set([1,2,3,4,5]);
+
+var defaultData = {
+  flooded: [
+    { id: 1, name: "น้ำท่วมซอยรามคำแหง 24", desc: "ระดับน้ำประมาณ 30 ซม.", lat: 13.7595, lng: 100.6268, reporter: "ประชาชน", severity: 3, status: "approved", createdAt: Date.now()-86400000, time: "2026-09-28 14:30" },
+    { id: 2, name: "ถนนพหลโยธิน ช่วงรังสิต", desc: "น้ำท่วมขังหลังฝนตกหนัก", lat: 13.9889, lng: 100.6175, reporter: "ประชาชน", severity: 2, status: "approved", createdAt: Date.now()-172800000, time: "2026-09-27 09:15" },
+    { id: 101, name: "ถนนพระราม 2 (บางขุนเทียน)", desc: "จุดเฝ้าระวังซ้ำซาก", lat: 13.6590, lng: 100.4350, reporter: "กทม. สำนักการระบายน้ำ", severity: 3, status: "approved", createdAt: Date.now()-3600000, time: "อ้างอิง" },
+    { id: 102, name: "ถนนเพชรเกษม (บางแค)", desc: "จุดเสี่ยงน้ำท่วมขัง", lat: 13.7120, lng: 100.3980, reporter: "กทม.", severity: 2, status: "approved", createdAt: Date.now()-7200000, time: "อ้างอิง" },
+    { id: 103, name: "ถนนลาดพร้าว (วังทองหลาง)", desc: "เขตเมือง", lat: 13.7860, lng: 100.6050, reporter: "กทม.", severity: 2, status: "approved", createdAt: Date.now()-5400000, time: "อ้างอิง" },
+    { id: 104, name: "ถนนสุขุมวิท (บางนา)", desc: "ฝั่งตะวันออก", lat: 13.6680, lng: 100.6040, reporter: "กทม.", severity: 3, status: "approved", createdAt: Date.now()-9000000, time: "อ้างอิง" },
+    { id: 105, name: "อ.บางบาล อยุธยา", desc: "ลุ่มน้ำเจ้าพระยา", lat: 14.3200, lng: 100.4700, reporter: "ปภ. / สทนช.", severity: 4, status: "approved", createdAt: Date.now()-10800000, time: "อ้างอิง" },
+    { id: 106, name: "อ.เมืองนครสวรรค์", desc: "จุดเฝ้าระวังน้ำ", lat: 15.7040, lng: 100.1200, reporter: "ปภ. / กรมชลประทาน", severity: 3, status: "approved", createdAt: Date.now()-14400000, time: "อ้างอิง" },
+    { id: 107, name: "แยกอโศก-ดินแดง", desc: "คลองแสนแสบ", lat: 13.7370, lng: 100.5610, reporter: "กทม.", severity: 3, status: "approved", createdAt: Date.now()-1800000, time: "อ้างอิง" },
+    { id: 108, name: "วิภาวดี-รังสิต (หลักสี่)", desc: "ลุ่มต่ำ", lat: 13.8870, lng: 100.5790, reporter: "กทม.", severity: 3, status: "approved", createdAt: Date.now()-2400000, time: "อ้างอิง" },
+    { id: 109, name: "แยกบางกะปิ", desc: "คลองแสนแสบล้น", lat: 13.7650, lng: 100.6400, reporter: "กทม.", severity: 3, status: "approved", createdAt: Date.now()-3000000, time: "อ้างอิง" },
+    { id: 110, name: "ศรีนครินทร์ (สำโรง)", desc: "รอยต่อ กทม.", lat: 13.6850, lng: 100.6050, reporter: "กทม.", severity: 3, status: "approved", createdAt: Date.now()-4500000, time: "อ้างอิง" },
+    { id: 111, name: "ถนนแจ้งวัฒนะ", desc: "คลองประปา", lat: 13.8930, lng: 100.5610, reporter: "กทม.", severity: 2, status: "approved", createdAt: Date.now()-6000000, time: "อ้างอิง" },
+    { id: 112, name: "ถนนรามอินทรา", desc: "ฝั่งตะวันออก", lat: 13.7950, lng: 100.6800, reporter: "กทม.", severity: 2, status: "approved", createdAt: Date.now()-7500000, time: "อ้างอิง" },
+    { id: 113, name: "ถนนสุขสวัสดิ์", desc: "ฝั่งตะวันตก", lat: 13.6610, lng: 100.4760, reporter: "กทม.", severity: 3, status: "approved", createdAt: Date.now()-9000000, time: "อ้างอิง" },
+    { id: 114, name: "ถนนพญาไท", desc: "ชุมชนหนาแน่น", lat: 13.7500, lng: 100.5330, reporter: "กทม.", severity: 2, status: "approved", createdAt: Date.now()-10500000, time: "อ้างอิง" }
+  ],
+  risk: [
+    { id: 3, name: "อ.บางบาล อยุธยา", desc: "เสี่ยงน้ำล้นตลิ่ง", lat: 14.3167, lng: 100.4667, reporter: "สทนช.", severity: 4, status: "approved", createdAt: Date.now()-86400000, time: "อ้างอิง" },
+    { id: 201, name: "ลุ่มน้ำเจ้าพระยาตอนล่าง (นนทบุรี)", desc: "เสี่ยงซ้ำซาก", lat: 13.8600, lng: 100.4800, reporter: "ปภ.", severity: 3, status: "approved", createdAt: Date.now()-172800000, time: "อ้างอิง" },
+    { id: 202, name: "ลุ่มต่ำ จ.ปทุมธานี", desc: "น้ำท่วมขัง", lat: 14.0200, lng: 100.5300, reporter: "ปภ.", severity: 3, status: "approved", createdAt: Date.now()-200000000, time: "อ้างอิง" }
+  ],
+  gates: [
+    { id: 4, name: "ประตูระบายน้ำคลองแสนแสบ", desc: "ฝั่งตะวันออก กทม.", lat: 13.7800, lng: 100.6500, reporter: "กทม.", status: "approved", createdAt: Date.now(), time: "อ้างอิง" },
+    { id: 301, name: "ประตูระบายน้ำคลองลัดโพธิ์", desc: "พระราชดำริ", lat: 13.6550, lng: 100.5400, reporter: "กรมชลประทาน", status: "approved", createdAt: Date.now(), time: "อ้างอิง" },
+    { id: 302, name: "เขื่อนเจ้าพระยา", desc: "ชัยนาท", lat: 15.1800, lng: 100.1400, reporter: "กรมชลประทาน", status: "approved", createdAt: Date.now(), time: "อ้างอิง" },
+    { id: 303, name: "ประตูระบายน้ำคลองภาษีเจริญ", desc: "ฝั่งตะวันตก", lat: 13.7200, lng: 100.4500, reporter: "กทม.", status: "approved", createdAt: Date.now(), time: "อ้างอิง" },
+    { id: 304, name: "ประตูระบายน้ำคลองประปา", desc: "คลองประปา", lat: 13.8100, lng: 100.5200, reporter: "กทม.", status: "approved", createdAt: Date.now(), time: "อ้างอิง" },
+    { id: 305, name: "ประตูระบายน้ำคลองบางเขน", desc: "บางเขน", lat: 13.8700, lng: 100.6000, reporter: "กทม.", status: "approved", createdAt: Date.now(), time: "อ้างอิง" },
+    { id: 306, name: "ประตูระบายน้ำคลองลาดพร้าว", desc: "ลาดพร้าว", lat: 13.8200, lng: 100.6100, reporter: "กทม.", status: "approved", createdAt: Date.now(), time: "อ้างอิง" },
+    { id: 307, name: "ประตูระบายน้ำแม่น้ำท่าจีน", desc: "ท่าจีน", lat: 13.5500, lng: 100.2700, reporter: "กรมชลประทาน", status: "approved", createdAt: Date.now(), time: "อ้างอิง" }
+  ],
+  tele: [], river: [], reports: [], _v: 8
+};
+
+var data = TFStorage.get('thaiflood_data', JSON.parse(JSON.stringify(defaultData)));
+
+(function rescueData() {
+  var needsReset = false;
+  if (!data || typeof data !== 'object' || Array.isArray(data)) needsReset = true;
+  else { ['flooded','risk','gates'].forEach(function(t) { if (!Array.isArray(data[t]) || data[t].length < 3) needsReset = true; }); }
+  if (needsReset) { data = JSON.parse(JSON.stringify(defaultData)); TFStorage.set('thaiflood_data', data); }
+})();
+if (typeof data._v !== 'number') data._v = 8;
+['river','reports'].forEach(function(k) { if (!Array.isArray(data[k])) data[k] = []; });
+
+(function mergeDefaults() {
+  var changed = false;
+  ['flooded','risk','gates'].forEach(function(t) {
+    if (!Array.isArray(data[t])) { data[t] = []; changed = true; }
+    var ids = new Set(data[t].map(function(i) { return i.id; }));
+    (defaultData[t] || []).forEach(function(item) { if (!ids.has(item.id)) { data[t].push(JSON.parse(JSON.stringify(item))); changed = true; } });
+  });
+  if (changed) { data._v = (data._v || 0) + 1; TFStorage.set('thaiflood_data', data); }
+})();
+
+searchQuery = '';
+severityFilter = new Set([1,2,3,4,5]);
+
+var agencies = TFStorage.get('thaiflood_agencies', [
+  { id: 1, name: "สทนช.", type: "agency", link: "https://www.onwr.go.th" },
+  { id: 2, name: "กรมชลประทาน", type: "agency", link: "https://www.rid.go.th" },
+  { id: 3, name: "กรมอุตุนิยมวิทยา", type: "agency", link: "https://www.tmd.go.th" },
+  { id: 4, name: "กรุงเทพมหานคร", type: "agency", link: "https://www.bangkok.go.th" }
+]);
+var apis = TFStorage.get('thaiflood_apis', []);
+
+/* ═══ Boot ═══ */
+function tfBoot() {
+  if (window.__TF.booted) return;
+  window.__TF.booted = true;
+  tfLog('tfBoot START. L=' + (typeof L !== 'undefined'));
+
+  try { if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons(); } catch (e) {}
+  try { applyDarkMode(); } catch (e) {}
+
+  try {
+    if (typeof L !== 'undefined' && L.map) { initMap(); mapMode = 'leaflet'; tfLog('Map OK: leaflet'); }
+    else { initMapFallback(); mapMode = 'iframe'; tfLog('Map OK: iframe fallback', true); }
+  } catch (e) {
+    tfLog('initMap error: ' + e.message, true);
+    try { initMapFallback(); mapMode = 'iframe'; } catch (e2) {}
+  }
+
+  try { checkAdminStatus(); } catch (e) {}
+  try { switchView('map'); } catch (e) {}
+  try { registerPWA(); } catch (e) {}
+  try { initSearchHandlers(); } catch (e) {}
+
+  setTimeout(tfHideBoot, 100);
+  setTimeout(function() { try { refreshAllData(false); } catch (e) { tfLog('refresh: ' + e.message, true); } }, 800);
+  setInterval(function() { try { refreshAllData(false); } catch (e) {} }, 5 * 60 * 1000);
+
+  if (!TFStorage.getRaw('thaiflood_dark') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    TFStorage.setRaw('thaiflood_dark', 'true');
+    try { applyDarkMode(); } catch (e) {}
+  }
+
+  [200, 600, 1200, 2500].forEach(function(t) { setTimeout(function() { try { if (map) map.invalidateSize(); } catch (e) {} }, t); });
+}
+
+tfBoot();
+
+(function ultimateFailsafe() {
+  var attempts = 0;
+  var t = setInterval(function() {
+    attempts++;
+    tfHideBoot();
+    if (typeof map !== 'undefined' && map && mapMode === 'leaflet') { clearInterval(t); tfLog('✓ Map verified @' + attempts + 's'); return; }
+    if (typeof L !== 'undefined' && typeof initMap === 'function' && mapMode !== 'leaflet') {
+      try { initMap(); mapMode = 'leaflet'; tfLog('✓ Force initMap @' + attempts + 's'); clearInterval(t); return; } catch (e) {}
+    }
+    if (attempts >= 15) {
+      clearInterval(t);
+      var el = document.getElementById('map-loading');
+      if (el) {
+        el.innerHTML = '<b>⚠️ โหลดแผนที่ไม่ได้</b><br>'
+          + '<span style="font-size:11px;color:#94a3b8">Leaflet: ' + (typeof L !== 'undefined' ? '✓ v' + L.version : '✗') + '</span><br>'
+          + '<button onclick="location.reload()" style="margin-top:10px;padding:8px 18px;background:#0d9488;color:#fff;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:600">🔄 ลองใหม่</button>';
+      }
+    }
+  }, 1000);
+})();
+
+window.addEventListener('load', function() { try { if (map) map.invalidateSize(); } catch (e) {} });
+document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'visible') { try { if (map) map.invalidateSize(); } catch (e) {} } });
+
+/* ═══ Map ═══ */
+function updateMapLoading(msg, isError) {
+  var mapEl = document.getElementById('map'); if (!mapEl) return;
+  var el = document.getElementById('map-loading');
+  if (!el) { el = document.createElement('div'); el.id = 'map-loading'; mapEl.parentNode.appendChild(el); }
+  if (isError) {
+    el.innerHTML = '⚠️ ' + msg
+      + '<br><button id="map-retry-btn" style="margin-top:10px;padding:8px 18px;background:#0d9488;color:#fff;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none">🔄 ลองใหม่</button>';
+    var btn = document.getElementById('map-retry-btn');
+    if (btn) btn.onclick = function() { location.reload(); };
+  } else { el.innerHTML = '<span class="spinner"></span> ' + msg; }
+}
+function hideMapLoading() {
+  var el = document.getElementById('map-loading');
+  if (el) { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(function() { el.remove(); }, 350); }
+}
+
+function initMap() {
+  var el = document.getElementById('map');
+  console.log('[initMap] el:', el, 'size:', el ? el.clientWidth + 'x' + el.clientHeight : 'N/A');
+  if (!el) throw new Error('ไม่พบ #map');
+  console.log('[initMap] L.version:', L.version);
+
+  map = L.map(el, { zoomControl: false, preferCanvas: true, attributionControl: true }).setView([13.7563, 100.5018], 6);
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+  var providers = [
+    { name: 'ESRI Street', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '© ESRI', maxZoom: 19 } },
+    { name: 'CartoDB Voyager', url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', opts: { attribution: '© OSM © CartoDB', maxZoom: 19, subdomains: 'abcd' } },
+    { name: 'CartoDB Light', url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', opts: { attribution: '© OSM © CartoDB', maxZoom: 19, subdomains: 'abcd' } },
+    { name: 'OSM.org', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', opts: { attribution: '© OpenStreetMap', maxZoom: 19, subdomains: 'abc' } },
+    { name: 'OSM.de', url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png', opts: { attribution: '© OSM DE', maxZoom: 19 } }
+  ];
+
+  var tileLayer = null, loaded = false;
+  var failsafe = setTimeout(function() { if (!loaded) { tfLog('Tile failsafe', true); updateMapLoading('ไม่สามารถโหลดแผนที่ได้ — ลองใหม่', true); } }, 12000);
+
+  function tryTile(i) {
+    if (loaded) return;
+    if (tileLayer) { try { map.removeLayer(tileLayer); } catch (e) {} tileLayer = null; }
+    if (i >= providers.length) { clearTimeout(failsafe); updateMapLoading('ไม่สามารถโหลดแผนที่ได้', true); return; }
+    var p = providers[i];
+    updateMapLoading('กำลังโหลดแผนที่... (' + p.name + ' ' + (i+1) + '/' + providers.length + ')');
+    console.log('[Tile] trying:', p.name);
+    tileLayer = L.tileLayer(p.url, p.opts);
+    var errCount = 0, switched = false;
+    tileLayer.on('tileload', function() {
+      if (loaded) return;
+      loaded = true; clearTimeout(failsafe); hideMapLoading();
+      console.log('[Tile] ✓', p.name); tfLog('✓ Tile OK: ' + p.name);
+    });
+    tileLayer.on('tileerror', function() {
+      if (loaded || switched) return;
+      errCount++;
+      if (errCount >= 1 && i < providers.length - 1) {
+        switched = true; setTimeout(function() { if (!loaded) tryTile(i + 1); }, 500);
+      }
+    });
+    setTimeout(function() { if (!loaded && !switched && i < providers.length - 1) { switched = true; tryTile(i + 1); } }, 4000);
+    try { tileLayer.addTo(map); } catch (e) {}
+  }
+  tryTile(0);
+
+  ['flooded','risk','gates','tele','river','reports'].forEach(function(t) { layerGroups[t] = L.layerGroup().addTo(map); });
+
+  map.on('click', function(e) {
+    clickLatLng = e.latlng;
+    var m = document.getElementById('modal');
+    if (m && !m.classList.contains('hidden')) {
+      document.getElementById('form-lat').value = e.latlng.lat.toFixed(5);
+      document.getElementById('form-lng').value = e.latlng.lng.toFixed(5);
+    }
+  });
+
+  [50, 150, 400, 800, 1500, 2500].forEach(function(t) { setTimeout(function() { try { map.invalidateSize(); } catch (e) {} }, t); });
+  if (window.ResizeObserver) new ResizeObserver(function() { try { map.invalidateSize(); } catch (e) {} }).observe(el);
+
+  if (window.__TF && window.__TF.pendingSearch) {
+    var p = window.__TF.pendingSearch; window.__TF.pendingSearch = null;
+    setTimeout(function() { searchShowMarker(p.lat, p.lng, p.name); }, 300);
+  }
+}
+
+function initMapFallback() {
+  var el = document.getElementById('map'); if (!el) return;
+  hideMapLoading();
+  el.innerHTML = '<div class="map-fallback"><div class="map-fallback-card"><h3>⚠️ แผนที่โหลดไม่ได้</h3><p>แสดงแผนที่แบบฝังแทน</p><iframe src="https://www.openstreetmap.org/export/embed.html?bbox=97.5,5.5,105.5,20.5&layer=mapnik" loading="lazy" allowfullscreen></iframe></div></div>';
+}
+
+function applyDarkMode() {
+  var isDark = TFStorage.getRaw('thaiflood_dark') === 'true';
+  document.body.style.background = isDark ? '#0f172a' : '#f8fafc';
+  document.body.style.color = isDark ? '#e2e8f0' : '#1e293b';
+  var btn = document.getElementById('btn-dark');
+  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+}
+function toggleDarkMode() {
+  var isDark = TFStorage.getRaw('thaiflood_dark') === 'true';
+  TFStorage.setRaw('thaiflood_dark', String(!isDark));
+  applyDarkMode();
+}
+
+/* ═══ Refresh ═══ */
+async function refreshAllData(showMsg) {
+  var icon = document.getElementById('btn-refresh');
+  if (icon) icon.style.animation = 'pulse 1s infinite';
+  try {
+    purgeExpired();
+    var fresh = TFStorage.get('thaiflood_data', null);
+    if (fresh && (fresh._v || 0) > (data._v || 0)) data = fresh;
+
+    /* POPNIX + Telemetry + Weather + RID */
+    await Promise.allSettled([
+      loadPopnixData(!!showMsg).catch(function(e) { tfLog('POPNIX: ' + e.message, true); }),
+      loadTelemetryStations(false).catch(function(e) { tfLog('Telemetry: ' + e.message, true); }),
+      fetchWeather(false).catch(function(e) {}),
+      fetchRidDams(false).catch(function(e) {})
+    ]);
+
+    renderMarkers();
+    if (['flooded','risk','gates'].includes(currentView)) renderList(currentView);
+    if (currentView === 'settings' && isAdmin) { renderPopnixStatus(); renderTelemetryStatus(); }
+    updatePopnixSummaries();
+
+    if (showMsg) {
+      var meta = TFStorage.get('popnix_meta', null);
+      if (meta && meta.ok) showToast('อัปเดตแล้ว · POPNIX: ' + meta.canals + '/' + meta.river + '/' + meta.reports);
+      else if (meta && meta.skipped) showToast('อัปเดตแล้ว · ใช้แหล่งสำรอง (localhost)');
+      else showToast('อัปเดตข้อมูลแล้ว');
+    }
+  } catch (e) {
+    if (showMsg) showToast('อัปเดตบางส่วนไม่สำเร็จ');
+    tfLog('refresh: ' + e.message, true);
+  } finally {
+    if (icon) setTimeout(function() { icon.style.animation = ''; }, 600);
+  }
+}
+
+function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('show'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('show'); }
+
+/* ═══ Markers ═══ */
+function passesFilters(item) {
+  if (!severityFilter.has(item.severity || 3)) return false;
+  if (searchQuery) {
+    var q = searchQuery.toLowerCase();
+    var h = ((item.name||'') + ' ' + (item.desc||'') + ' ' + (item.reporter||'')).toLowerCase();
+    if (h.indexOf(q) === -1) return false;
+  }
+  return true;
+}
+
+function renderMarkers() {
+  if (!map || mapMode !== 'leaflet') return;
+  ['flooded','risk','gates','tele','river','reports'].forEach(function(t) {
+    if (layerGroups[t]) layerGroups[t].clearLayers();
+    markers[t] = [];
+  });
+
+  var baseColors = { flooded: '#3b82f6', risk: '#f59e0b', gates: '#0284c7', tele: '#7c3aed', river: '#06b6d4', reports: '#ec4899' };
+  var sevColors = { 1:'#94a3b8', 2:'#38bdf8', 3:'#3b82f6', 4:'#f59e0b', 5:'#ef4444' };
+  var count = 0;
+
+  ['flooded','risk','gates','tele','river','reports'].forEach(function(type) {
+    if (!data[type]) data[type] = [];
+    if (!layersVisible[type]) return;
+    data[type].forEach(function(item) {
+      if (type !== 'tele' && type !== 'river' && type !== 'reports') {
+        if (!isAdmin && (item.status === 'rejected' || item.status === 'pending')) return;
+        if (!passesFilters(item)) return;
+      } else {
+        if (!severityFilter.has(item.severity || 3)) return;
+      }
+      count++;
+      var sev = item.severity || 3;
+      var color = type === 'flooded' ? (sevColors[sev] || baseColors[type]) : baseColors[type];
+      var r = type === 'tele' ? 6 : (type === 'river' ? 9 : (type === 'reports' ? 7 + sev : 7 + sev * 1.5));
+      var isGov = isGovReporter(item.reporter);
+      var isPopnix = item.source && String(item.source).indexOf('popnix') === 0;
+
+      var m = L.circleMarker([item.lat, item.lng], {
+        radius: r, fillColor: color, color: '#fff',
+        weight: isGov ? 3 : 2, opacity: 1,
+        fillOpacity: type === 'river' ? 0.9 : (type === 'reports' ? 0.7 : 0.85),
+        dashArray: type === 'reports' ? '3,3' : null
+      });
+      layerGroups[type].addLayer(m); markers[type].push(m);
+
+      var ageH = item.createdAt ? Math.round((Date.now() - item.createdAt) / 3600000) : null;
+      var ageT = ageH !== null ? (ageH < 24 ? ageH + ' ชม.ที่แล้ว' : Math.round(ageH/24) + ' วันที่แล้ว') : (item.time || '');
+      var sevLabel = ['','เล็กน้อย','ปานกลาง','รุนแรง','วิกฤต','ฉุกเฉิน'][sev] || '';
+      var popnixBadge = isPopnix ? '<span class="popnix-badge">POPNIX</span>' : '';
+      var disclaimer = isPopnix ? '<div class="disclaimer-line">⚠️ ' + escapeHtml(POPNIX.disclaimer) + ' · ' + escapeHtml(POPNIX.credit) + '</div>' : '';
+
+      m.bindPopup('<div style="padding:4px;min-width:200px;font-family:Sarabun,sans-serif">'
+        + '<p style="font-weight:600;color:#1e293b;margin:0">' + govBadge(item.reporter) + escapeHtml(item.name) + popnixBadge + '</p>'
+        + '<p style="font-size:11px;margin:2px 0"><strong>ระดับ ' + sev + '</strong> (' + escapeHtml(sevLabel) + ')</p>'
+        + '<p style="font-size:13px;color:#475569;margin:4px 0">' + escapeHtml(item.desc||'-') + '</p>'
+        + (item.photo ? '<img src="' + item.photo + '" style="margin-top:6px;border-radius:8px;max-height:120px;width:100%;object-fit:cover">' : '')
+        + '<p style="font-size:11px;color:#94a3b8;margin-top:6px">' + escapeHtml(item.reporter||'-') + ' · ' + escapeHtml(ageT) + '</p>'
+        + disclaimer + '</div>');
+    });
+  });
+
+  var c = document.getElementById('filter-count');
+  if (c) c.textContent = (searchQuery || severityFilter.size < 5) ? 'แสดง ' + count + ' จุด' : '';
+}
+
+function toggleLayer(type) {
+  layersVisible[type] = !layersVisible[type];
+  var btn = document.getElementById('btn-' + type);
+  if (btn) btn.classList.toggle('active');
+  if (map && layerGroups[type]) {
+    if (layersVisible[type]) map.addLayer(layerGroups[type]);
+    else map.removeLayer(layerGroups[type]);
+  }
+}
+
+/* ═══ Views ═══ */
+function switchView(view) {
+  currentView = view;
+  closeSidebar();
+  document.querySelectorAll('.sidebar-item').forEach(function(el) {
+    el.classList.remove('active');
+    if (el.dataset.view === view) el.classList.add('active');
+  });
+  ['map','list','situation','weather','alert','settings'].forEach(function(v) {
+    var el = document.getElementById('view-' + v);
+    if (el) el.classList.add('hidden');
+  });
+
+  var ql = document.getElementById('quick-layers');
+  if (ql) ql.style.display = (view === 'map') ? 'flex' : 'none';
+
+  var titles = { map:'แผนที่หลัก', flooded:'พื้นที่น้ำท่วมขัง', risk:'พื้นที่เสี่ยงน้ำท่วม', gates:'ประตูระบายน้ำ', situation:'สถานการณ์น้ำ', weather:'วิเคราะห์สภาพอากาศ', alert:'เตือนภัย', settings:'ตั้งค่า (Admin)' };
+  document.getElementById('page-title').textContent = titles[view] || view;
+
+  var lt = document.getElementById('layer-toggles');
+  var ba = document.getElementById('btn-add');
+  var sb = document.getElementById('search-bar');
+  var legend = document.getElementById('legend');
+  if (lt) lt.style.display = 'none';
+  if (sb) sb.classList.add('hidden');
+  if (legend) legend.style.display = 'none';
+
+  if (view === 'map') {
+    document.getElementById('view-map').classList.remove('hidden');
+    if (lt) { lt.classList.remove('hidden'); lt.style.display = 'flex'; }
+    if (sb) sb.classList.remove('hidden');
+    if (legend) legend.style.display = 'block';
+    if (ba) ba.classList.remove('hidden');
+    if (ql) ql.style.display = 'flex';
+    setTimeout(function() { try { if (map) map.invalidateSize(); } catch (e) {} }, 150);
+  } else if (['flooded','risk','gates'].includes(view)) {
+    if (ba) ba.classList.remove('hidden');
+    document.getElementById('view-list').classList.remove('hidden');
+    renderList(view);
+  } else if (view === 'situation') {
+    if (ba) ba.classList.add('hidden');
+    document.getElementById('view-situation').classList.remove('hidden');
+    updatePopnixSummaries();
+    if (!TFStorage.get('popnix_meta', null)) loadPopnixData(false);
+    fetchRidDams(false);
+  } else if (view === 'weather') {
+    if (ba) ba.classList.add('hidden');
+    document.getElementById('view-weather').classList.remove('hidden');
+    fetchWeather(false);
+  } else if (view === 'alert') {
+    if (ba) ba.classList.add('hidden');
+    document.getElementById('view-alert').classList.remove('hidden');
+  } else if (view === 'settings') {
+    if (ba) ba.classList.add('hidden');
+    document.getElementById('view-settings').classList.remove('hidden');
+    if (isAdmin) { renderAgencies(); renderApis(); renderTelemetryStatus(); renderPopnixStatus(); }
+  }
+}
+
+function renderList(type) {
+  var titles = { flooded:'พื้นที่น้ำท่วมขัง', risk:'พื้นที่เสี่ยงน้ำท่วม', gates:'ประตูระบายน้ำ' };
+  document.getElementById('list-title').textContent = titles[type];
+  var c = document.getElementById('list-container');
+  var items = data[type] || [];
+  var visible = isAdmin ? items : items.filter(function(i) { return !i.status || i.status === 'approved'; });
+  visible = visible.filter(passesFilters);
+  if (!visible.length) { c.innerHTML = '<div style="text-align:center;padding:48px;color:#94a3b8">ไม่พบข้อมูล</div>'; return; }
+
+  var sevBg = { 1:'background:#f1f5f9;color:#475569', 2:'background:#e0f2fe;color:#0369a1', 3:'background:#dbeafe;color:#1e40af', 4:'background:#fef3c7;color:#92400e', 5:'background:#fee2e2;color:#b91c1c' };
+  c.innerHTML = visible.map(function(item) {
+    var sev = item.severity || 3;
+    var ageH = item.createdAt ? Math.round((Date.now() - item.createdAt) / 3600000) : null;
+    var ageT = ageH !== null ? (ageH < 24 ? ageH + ' ชม.' : Math.round(ageH/24) + ' วัน') : '';
+    var adminBtns = isAdmin ? '<button onclick="editItem(\'' + type + '\',' + item.id + ')" style="padding:4px">✏️</button><button onclick="deleteItem(\'' + type + '\',' + item.id + ')" style="padding:4px">🗑️</button>' : '';
+    return '<div style="background:#fff;border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05)">'
+      + '<div style="display:flex;justify-content:space-between;gap:8px">'
+      + '<div style="min-width:0;flex:1">'
+      + '<h4 style="font-weight:600;font-size:14px;margin:0">' + govBadge(item.reporter) + escapeHtml(item.name) + '</h4>'
+      + '<p style="font-size:11px;color:#64748b;margin:4px 0">' + escapeHtml(item.desc||'-') + '</p>'
+      + '<span style="font-size:10px;padding:2px 8px;border-radius:999px;' + (sevBg[sev]||'') + '">ระดับ ' + sev + '</span>'
+      + '</div><div style="display:flex;gap:4px">' + adminBtns + '</div></div>'
+      + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8">'
+      + '<span>' + escapeHtml(item.reporter||'-') + '</span><span>' + escapeHtml(ageT || item.time || '') + '</span></div>'
+      + '<button onclick="focusMarker(' + item.lat + ',' + item.lng + ')" style="margin-top:8px;font-size:12px;color:#0d9488">ดูบนแผนที่ →</button></div>';
+  }).join('');
+}
+
+function focusMarker(lat, lng) {
+  switchView('map');
+  setTimeout(function() { try { if (map) map.setView([lat, lng], 14); } catch (e) {} }, 200);
+}
+
+/* ═══ Search ═══ */
+var searchTimer = null;
+function applyFilters() {
+  var inp = document.getElementById('search-input');
+  searchQuery = (inp && inp.value || '').trim();
+  var cb = document.getElementById('search-clear');
+  if (cb) cb.classList.toggle('hidden', !searchQuery);
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(function() {
+    renderMarkers();
+    if (['flooded','risk','gates'].includes(currentView)) renderList(currentView);
+  }, 150);
+}
+function clearSearch() {
+  var i = document.getElementById('search-input');
+  if (i) i.value = '';
+  searchHideResults();
+  applyFilters();
+}
+var geocodeMarker = null;
+var searchResultsCache = [];
+function searchSetLoading(on) {
+  var el = document.getElementById('search-loading');
+  var cl = document.getElementById('search-clear');
+  if (el) el.classList.toggle('hidden', !on);
+  if (cl && !on) {
+    var inp = document.getElementById('search-input');
+    if (inp) cl.classList.toggle('hidden', !inp.value.trim());
+  }
+}
+function searchShowResults(list, query) {
+  var box = document.getElementById('search-results'); if (!box) return;
+  if (!list || !list.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+  box.innerHTML = list.map(function(r, i) {
+    var name = r.display_name || r.name || query;
+    var short = name.length > 80 ? name.substring(0, 80) + '...' : name;
+    return '<button onclick="searchPickResult(' + i + ')" style="display:block;width:100%;text-align:left;padding:10px 14px;border-bottom:1px solid #f1f5f9;background:transparent;font-size:12px;color:#334155;cursor:pointer">'
+      + '<span style="color:#0d9488;font-weight:600">📍</span> ' + escapeHtml(short) + '</button>';
+  }).join('');
+  box.classList.remove('hidden');
+}
+function searchHideResults() {
+  var box = document.getElementById('search-results');
+  if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
+}
+function searchPickResult(idx) {
+  var r = searchResultsCache[idx]; if (!r) return;
+  searchHideResults();
+  searchShowMarker(r.lat, r.lng, r.display_name || r.name || '');
+}
+function searchShowMarker(lat, lng, name) {
+  if (!map || typeof L === 'undefined' || mapMode !== 'leaflet') {
+    window.__TF.pendingSearch = { lat: lat, lng: lng, name: name };
+    showToast('พบ: ' + (name || '').substring(0, 40));
+    return;
+  }
+  try {
+    if (geocodeMarker) { map.removeLayer(geocodeMarker); geocodeMarker = null; }
+    map.setView([lat, lng], 15);
+    geocodeMarker = L.circleMarker([lat, lng], { radius: 12, color: '#dc2626', fillColor: '#ef4444', fillOpacity: 0.55, weight: 3 }).addTo(map);
+    geocodeMarker.bindPopup('<div style="font-family:Sarabun,sans-serif;font-size:13px;padding:2px"><p style="margin:0;font-weight:600;color:#991b1b">📍 ' + escapeHtml((name || '').substring(0, 60)) + '</p></div>').openPopup();
+  } catch (e) {}
+}
+async function searchPlace() {
+  var inp = document.getElementById('search-input');
+  var q = (inp && inp.value || '').trim();
+  if (!q) { showToast('กรุณาพิมพ์ชื่อสถานที่'); return; }
+  searchHideResults(); searchSetLoading(true);
+  showToast('กำลังค้นหา "' + q + '"...');
+  var results = [];
+  try {
+    var url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=th&q=' + encodeURIComponent(q);
+    var r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (r.ok) { var j = await r.json(); if (Array.isArray(j)) j.forEach(function(item) { if (item && item.lat && item.lon) results.push({ lat: parseFloat(item.lat), lng: parseFloat(item.lon), display_name: item.display_name || q, name: item.name || q }); }); }
+  } catch (e) {}
+  if (!results.length) {
+    try {
+      var url2 = 'https://photon.komoot.io/api/?limit=5&lang=th&q=' + encodeURIComponent(q);
+      var r2 = await fetch(url2);
+      if (r2.ok) { var j2 = await r2.json(); if (j2 && j2.features) j2.features.forEach(function(f) { var c = f.geometry && f.geometry.coordinates; if (c && c.length >= 2) { var props = f.properties || {}; var nm = [props.name, props.street, props.city, props.state, props.country].filter(Boolean).join(', '); results.push({ lat: parseFloat(c[1]), lng: parseFloat(c[0]), display_name: nm || q, name: props.name || q }); } }); }
+    } catch (e) {}
+  }
+  searchSetLoading(false);
+  if (!results.length) { showToast('ไม่พบสถานที่: ' + q); return; }
+  searchResultsCache = results;
+  searchShowMarker(results[0].lat, results[0].lng, results[0].display_name);
+  if (results.length > 1) searchShowResults(results.slice(0, 5), q);
+}
+document.addEventListener('click', function(e) {
+  var box = document.getElementById('search-results');
+  var bar = document.getElementById('search-bar');
+  if (!box || box.classList.contains('hidden')) return;
+  if (bar && bar.contains(e.target)) return;
+  searchHideResults();
+}, true);
+function toggleSeverityFilter(sev) {
+  if (severityFilter.has(sev)) severityFilter.delete(sev); else severityFilter.add(sev);
+  if (severityFilter.size === 0) severityFilter = new Set([1,2,3,4,5]);
+  document.querySelectorAll('.sev-chip').forEach(function(b) { var s = parseInt(b.dataset.sev); b.style.opacity = severityFilter.has(s) ? '1' : '0.35'; });
+  applyFilters();
+}
+function initSearchHandlers() { document.querySelectorAll('.sev-chip').forEach(function(b) { b.style.opacity = '1'; }); }
+
+/* ═══ Add/Edit/Delete ═══ */
+function openAddModal(preType) {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'เพิ่มข้อมูล';
+  document.getElementById('form-type').value = preType || (['flooded','risk','gates'].includes(currentView) ? currentView : 'flooded');
+  ['form-name','form-desc','form-reporter','form-photo'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('form-severity').value = '3';
+  document.getElementById('form-lat').value = clickLatLng ? clickLatLng.lat.toFixed(5) : '';
+  document.getElementById('form-lng').value = clickLatLng ? clickLatLng.lng.toFixed(5) : '';
+  var p = document.getElementById('photo-preview');
+  var pi = document.getElementById('photo-preview-img');
+  p.classList.add('hidden'); pi.removeAttribute('src');
+  document.getElementById('modal').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('modal').classList.add('hidden'); editingId = null; }
+
+document.addEventListener('change', async function(e) {
+  if (e.target.id === 'form-photo' && e.target.files && e.target.files[0]) {
+    var p = document.getElementById('photo-preview'), pi = document.getElementById('photo-preview-img');
+    try {
+      var r = await tfReadImage(e.target.files[0], 800, 0.7);
+      if (r) { pi.src = r; p.classList.remove('hidden'); }
+    } catch (err) { alert('ประมวลผลรูปไม่สำเร็จ'); e.target.value = ''; }
+  }
+});
+
+function saveData() {
+  var type = document.getElementById('form-type').value;
+  var name = document.getElementById('form-name').value.trim();
+  var desc = document.getElementById('form-desc').value.trim();
+  var severity = parseInt(document.getElementById('form-severity').value) || 3;
+  var lat = parseFloat(document.getElementById('form-lat').value);
+  var lng = parseFloat(document.getElementById('form-lng').value);
+  var reporter = document.getElementById('form-reporter').value.trim() || 'ประชาชน';
+  if (!name || isNaN(lat) || isNaN(lng)) return alert('กรุณากรอกชื่อและพิกัด');
+  var p = document.getElementById('photo-preview'), pi = document.getElementById('photo-preview-img');
+  var photo = (!p.classList.contains('hidden') && pi.getAttribute('src')) ? pi.src : null;
+  var now = Date.now();
+  if (editingId) {
+    var idx = data[type].findIndex(function(i) { return i.id === editingId; });
+    if (idx > -1) data[type][idx] = Object.assign({}, data[type][idx], { name: name, desc: desc, severity: severity, lat: lat, lng: lng, reporter: reporter, photo: photo || data[type][idx].photo });
+  } else {
+    data[type].push({ id: now, name: name, desc: desc, severity: severity, lat: lat, lng: lng, reporter: reporter, photo: photo, time: new Date().toLocaleString('th-TH'), createdAt: now, status: 'pending', expiresAt: now + 7*24*60*60*1000 });
+  }
+  data._v = (data._v || 0) + 1;
+  TFStorage.set('thaiflood_data', data);
+  closeModal(); renderMarkers();
+  if (['flooded','risk','gates'].includes(currentView)) renderList(currentView);
+  showToast('บันทึกแล้ว');
+}
+
+function editItem(type, id) {
+  if (!isAdmin) return showToast('เฉพาะ Admin');
+  var item = data[type].find(function(i) { return i.id === id; });
+  if (!item || type === 'tele' || type === 'river' || type === 'reports') return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'แก้ไข';
+  document.getElementById('form-type').value = type;
+  document.getElementById('form-name').value = item.name;
+  document.getElementById('form-desc').value = item.desc || '';
+  document.getElementById('form-severity').value = String(item.severity || 3);
+  document.getElementById('form-lat').value = item.lat;
+  document.getElementById('form-lng').value = item.lng;
+  document.getElementById('form-reporter').value = item.reporter || '';
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+function deleteItem(type, id) {
+  if (!isAdmin) return showToast('เฉพาะ Admin');
+  if (!confirm('ลบข้อมูลนี้?')) return;
+  data[type] = data[type].filter(function(i) { return i.id !== id; });
+  data._v = (data._v || 0) + 1;
+  TFStorage.set('thaiflood_data', data);
+  renderMarkers();
+  if (['flooded','risk','gates'].includes(currentView)) renderList(currentView);
+}
+
+function locateMe(fillForm) {
+  if (!navigator.geolocation) return alert('เบราว์เซอร์ไม่รองรับ GPS');
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      var la = pos.coords.latitude, lo = pos.coords.longitude;
+      if (fillForm) { document.getElementById('form-lat').value = la.toFixed(5); document.getElementById('form-lng').value = lo.toFixed(5); }
+      else {
+        switchView('map');
+        setTimeout(function() {
+          if (!map || mapMode !== 'leaflet') return;
+          map.setView([la, lo], 15);
+          L.circleMarker([la, lo], { radius: 10, color: '#0d9488', fillColor: '#14b8a6', fillOpacity: 0.6 }).addTo(map).bindPopup('ตำแหน่งของคุณ').openPopup();
+        }, 200);
+      }
+    },
+    function(err) { alert('ไม่สามารถระบุตำแหน่งได้: ' + err.message); },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
+}
+
+function purgeExpired() {
+  var now = Date.now();
+  var changed = false;
+  ['flooded','risk','gates'].forEach(function(t) {
+    var before = data[t].length;
+    data[t] = data[t].filter(function(i) { return !i.expiresAt || i.expiresAt > now; });
+    if (data[t].length !== before) changed = true;
+  });
+  if (Array.isArray(data.tele) && data.tele.length > 800) {
+    var isKeep = function(i) { return /seed-/.test(i.sourceId || '') || /popnix/.test(i.source || ''); };
+    var keep = data.tele.filter(isKeep);
+    var rest = data.tele.filter(function(i) { return !isKeep(i); }).sort(function(a,b) { return (b.createdAt||0)-(a.createdAt||0); }).slice(0, Math.max(0, 800 - keep.length));
+    data.tele = keep.concat(rest);
+    changed = true;
+  }
+  if (changed) { data._v = (data._v || 0) + 1; TFStorage.set('thaiflood_data', data); }
+}
+
+/* ═══ Admin ═══ */
+function checkAdminStatus() { isAdmin = TFStorage.getRaw('thaiflood_admin') === 'true'; updateAdminUI(); }
+function getAdminPassword() { return TFStorage.getRaw('thaiflood_admin_pw') || 'admin123'; }
+function loginAdmin() {
+  if (document.getElementById('admin-password').value === getAdminPassword()) {
+    isAdmin = true;
+    TFStorage.setRaw('thaiflood_admin', 'true');
+    updateAdminUI(); renderAgencies(); renderApis(); renderTelemetryStatus(); renderPopnixStatus();
+    renderMarkers();
+    if (['flooded','risk','gates'].includes(currentView)) renderList(currentView);
+    showToast('เข้าสู่ระบบสำเร็จ');
+  } else alert('รหัสผ่านไม่ถูกต้อง');
+}
+function logoutAdmin() {
+  isAdmin = false;
+  TFStorage.remove('thaiflood_admin');
+  updateAdminUI(); renderMarkers();
+  if (['flooded','risk','gates'].includes(currentView)) renderList(currentView);
+}
+function updateAdminUI() {
+  var l = document.getElementById('login-panel'), p = document.getElementById('admin-panel'), b = document.getElementById('admin-badge');
+  if (isAdmin) { l.classList.add('hidden'); p.classList.remove('hidden'); b.classList.remove('hidden'); b.style.display = 'inline-block'; }
+  else { l.classList.remove('hidden'); p.classList.add('hidden'); b.classList.add('hidden'); }
+}
+function openChangePasswordModal() {
+  ['pw-current','pw-new','pw-confirm'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('password-modal').classList.remove('hidden');
+}
+function closeChangePasswordModal() { document.getElementById('password-modal').classList.add('hidden'); }
+function changePassword() {
+  var c = document.getElementById('pw-current').value, n = document.getElementById('pw-new').value, f = document.getElementById('pw-confirm').value;
+  if (c !== getAdminPassword()) return alert('รหัสปัจจุบันไม่ถูกต้อง');
+  if (!n || n.length < 4) return alert('รหัสใหม่ต้อง ≥ 4 ตัวอักษร');
+  if (n !== f) return alert('ยืนยันรหัสไม่ตรงกัน');
+  TFStorage.setRaw('thaiflood_admin_pw', n);
+  closeChangePasswordModal(); showToast('เปลี่ยนรหัสผ่านแล้ว');
+}
+
+function renderAgencies() {
+  var c = document.getElementById('agencies-list'); if (!c) return;
+  c.innerHTML = agencies.map(function(a) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#f8fafc;border-radius:12px;margin-bottom:6px">'
+      + '<div style="min-width:0"><p style="font-weight:500;font-size:14px;margin:0">' + escapeHtml(a.name) + '</p>'
+      + '<p style="font-size:11px;color:#64748b;margin:2px 0 0">' + (a.type === 'agency' ? 'หน่วยงาน' : a.type === 'org' ? 'องค์กร' : 'บุคคล') + (a.link ? ' • ' + escapeHtml(a.link) : '') + '</p></div>'
+      + '<button onclick="deleteAgency(' + a.id + ')" style="padding:6px">🗑️</button></div>';
+  }).join('') || '<p style="color:#94a3b8;font-size:14px">ยังไม่มีข้อมูล</p>';
+}
+function openAgencyModal() {
+  ['agency-name','agency-link'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('agency-type').value = 'agency';
+  document.getElementById('agency-modal').classList.remove('hidden');
+}
+function closeAgencyModal() { document.getElementById('agency-modal').classList.add('hidden'); }
+function saveAgency() {
+  var n = document.getElementById('agency-name').value.trim();
+  if (!n) return alert('กรอกชื่อ');
+  agencies.push({ id: Date.now(), name: n, type: document.getElementById('agency-type').value, link: document.getElementById('agency-link').value.trim() });
+  TFStorage.set('thaiflood_agencies', agencies);
+  closeAgencyModal(); renderAgencies();
+}
+function deleteAgency(id) {
+  if (!confirm('ลบ?')) return;
+  agencies = agencies.filter(function(a) { return a.id !== id; });
+  TFStorage.set('thaiflood_agencies', agencies);
+  renderAgencies();
+}
+
+function renderApis() {
+  var c = document.getElementById('apis-list'); if (!c) return;
+  if (!apis.length) { c.innerHTML = '<p style="color:#94a3b8;font-size:14px">ยังไม่มี API</p>'; return; }
+  c.innerHTML = apis.map(function(a) {
+    return '<div style="display:flex;justify-content:space-between;padding:12px;background:#f8fafc;border-radius:12px;margin-bottom:6px;align-items:center">'
+      + '<div style="min-width:0;flex:1"><p style="font-weight:500;font-size:14px;margin:0">' + escapeHtml(a.name) + '</p>'
+      + '<p style="font-size:11px;color:#64748b;margin:2px 0 0">' + escapeHtml(a.url) + '</p></div>'
+      + '<button onclick="editApi(' + a.id + ')" style="padding:6px">✏️</button>'
+      + '<button onclick="deleteApi(' + a.id + ')" style="padding:6px">🗑️️</button></div>';
+  }).join('');
+}
+function openApiModal() {
+  editingApiId = null;
+  document.getElementById('api-modal-title').textContent = 'เพิ่ม API';
+  ['api-name','api-url','api-key','api-note'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('api-modal').classList.remove('hidden');
+}
+function closeApiModal() { document.getElementById('api-modal').classList.add('hidden'); editingApiId = null; }
+function editApi(id) {
+  var a = apis.find(function(x) { return x.id === id; }); if (!a) return;
+  editingApiId = id;
+  document.getElementById('api-modal-title').textContent = 'แก้ไข API';
+  document.getElementById('api-name').value = a.name;
+  document.getElementById('api-url').value = a.url;
+  document.getElementById('api-key').value = a.key || '';
+  document.getElementById('api-type').value = a.type || 'other';
+  document.getElementById('api-note').value = a.note || '';
+  document.getElementById('api-modal').classList.remove('hidden');
+}
+function saveApi() {
+  var n = document.getElementById('api-name').value.trim(), u = document.getElementById('api-url').value.trim();
+  if (!n || !u) return alert('กรอกชื่อและ URL');
+  var p = { name: n, url: u, key: document.getElementById('api-key').value.trim(), type: document.getElementById('api-type').value, note: document.getElementById('api-note').value.trim() };
+  if (editingApiId) { var i = apis.findIndex(function(a) { return a.id === editingApiId; }); if (i > -1) apis[i] = Object.assign({}, apis[i], p); }
+  else apis.push(Object.assign({ id: Date.now() }, p));
+  TFStorage.set('thaiflood_apis', apis);
+  closeApiModal(); renderApis(); showToast('บันทึก API แล้ว');
+}
+function deleteApi(id) {
+  if (!confirm('ลบ API?')) return;
+  apis = apis.filter(function(a) { return a.id !== id; });
+  TFStorage.set('thaiflood_apis', apis);
+  renderApis();
+}
+
+/* ═══ Telemetry — ThaiWater + BMA + seed ═══ */
+function adaptThaiWater(raw) {
+  var list = (raw.waterlevel_data && raw.waterlevel_data.data) || raw.data || (Array.isArray(raw) ? raw : []);
+  return list.map(function(s, i) {
+    var lat = parseFloat(s.station && s.station.tele_station_lat || s.lat || (s.geocode && s.geocode.lat));
+    var lng = parseFloat(s.station && s.station.tele_station_long || s.lon || s.lng || (s.geocode && s.geocode.lon));
+    var nObj = s.station && s.station.tele_station_name;
+    var name = (typeof nObj === 'object' ? (nObj.th || nObj.en) : nObj) || (s.station && s.station.tele_station_oldcode) || ('TW#' + i);
+    if (isNaN(lat) || isNaN(lng)) return null;
+    var lv = parseInt(s.situation_level) || 2;
+    return { sourceId: 'tw-' + (s.station && s.station.id || name), name: String(name), desc: 'ThaiWater · ระดับเตือน ' + lv + '/5', lat: lat, lng: lng, reporter: 'ThaiWater / สสน.', severity: Math.min(5, Math.max(1, lv)), status: 'approved', time: 'ThaiWater', source: 'ThaiWater' };
+  }).filter(Boolean);
+}
+function adaptBMA(raw) {
+  var list = Array.isArray(raw) ? raw : (raw.data || raw.results || raw.stations || []);
+  return list.map(function(s, i) {
+    var lat = parseFloat(s.latitude != null ? s.latitude : (s.lat != null ? s.lat : (s.y != null ? s.y : (s.geom && s.geom.coordinates && s.geom.coordinates[1]))));
+    var lng = parseFloat(s.longitude != null ? s.longitude : (s.lng != null ? s.lng : (s.x != null ? s.x : (s.geom && s.geom.coordinates && s.geom.coordinates[0]))));
+    var name = s.st_name || s.st_code || s.name || ('BMA#' + i);
+    if (isNaN(lat) || isNaN(lng)) return null;
+    var wl = s.wl_m != null ? s.wl_m : (s.water_level != null ? s.water_level : s.level);
+    return { sourceId: 'bma-' + (s.st_code || name), name: name, desc: 'กทม. · ' + (wl != null ? wl + ' ม.รทน.' : '-'), lat: lat, lng: lng, reporter: 'กทม. สำนักการระบายน้ำ', severity: 2, status: 'approved', time: 'BMA', source: 'BMA' };
+  }).filter(Boolean);
+}
+
+async function loadTelemetryStations(showMsg) {
+  try {
+    if (!data.tele) data.tele = [];
+    var seeds = data.tele.filter(function(i) { return /seed-/.test(i.sourceId || '') || /rid-seed-/.test(i.sourceId || '') || /bma-seed-/.test(i.sourceId || ''); });
+    if (!seeds.length) {
+      seeds = [];
+      var ridSeed = [
+        ['N-CM-01','โทรมาตร แม่น้ำปิง จ.เชียงใหม่',18.7883,98.9853],
+        ['N-LP-01','โทรมาตร แม่น้ำวัง จ.ลำปาง',18.2880,99.4920],
+        ['N-CR-01','โทรมาตร แม่น้ำกก จ.เชียงราย',19.9070,99.8320],
+        ['N-NA-01','โทรมาตร แม่น้ำน่าน จ.น่าน',18.7750,100.7730],
+        ['N-PL-01','โทรมาตร แม่น้ำน่าน จ.พิษณุโลก',16.8210,100.2650],
+        ['C-NS-01','โทรมาตร แม่น้ำเจ้าพระยา จ.นครสวรรค์',15.7040,100.1200],
+        ['C-CN-01','โทรมาตร เขื่อนเจ้าพระยา จ.ชัยนาท',15.1800,100.1400],
+        ['C-AY-01','โทรมาตร แม่น้ำเจ้าพระยา อยุธยา',14.3550,100.5680],
+        ['C-NB-01','โทรมาตร แม่น้ำเจ้าพระยา นนทบุรี',13.8600,100.4800],
+        ['C-BK-01','โทรมาตร แม่น้ำเจ้าพระยา กทม.',13.7560,100.4890],
+        ['C-SPK-01','โทรมาตร สมุทรปราการ',13.6000,100.6000]
+      ];
+      ridSeed.forEach(function(s, i) { seeds.push({ id: Date.now() + 100 + i, sourceId: 'rid-seed-' + s[0], name: s[1], desc: 'อ้างอิง · กรมชลประทาน', lat: s[2], lng: s[3], reporter: 'กรมชลประทาน', severity: 2, status: 'approved', createdAt: Date.now(), time: 'Seed', type: 'tele' }); });
+      var bmaSeed = [
+        ['WL.BCN.03','คลองบางเชือกหนัง - พุทธมณฑลสาย 2',13.75173,100.39162],
+        ['WL.PKS.69','เพชรเกษม 69',13.7085,100.3710],
+        ['WL.SEB.01','คลองแสนแสบ - ประตูระบายน้ำ',13.7480,100.5700],
+        ['WL.LPN.01','คลองลาดพร้าว - บึงทองหลาง',13.7890,100.6100]
+      ];
+      bmaSeed.forEach(function(s, i) { seeds.push({ id: Date.now() + 3000 + i, sourceId: 'bma-seed-' + s[0], name: s[1], desc: 'กทม. · ' + s[0], lat: s[2], lng: s[3], reporter: 'กทม.', severity: 2, status: 'approved', createdAt: Date.now(), time: 'Seed', type: 'tele' }); });
+    }
+
+    var merged = [], status = { ThaiWater: 'fail', BMA: 'fail' }, counts = { ThaiWater: 0, BMA: 0 }, ok = false;
+    try {
+      var r = await fetchTelemetryDualSource();
+      merged = r.merged; status = r.status; counts = r.counts;
+      if (merged.length) ok = true;
+    } catch (e) { tfLog('Telemetry fetch: ' + e.message, true); }
+
+    /* เก็บ POPNIX canals ที่มีอยู่แล้ว */
+    var popnixCanals = (data.tele || []).filter(function(i) { return i.source === 'popnix_canal'; });
+
+    var seen = new Set(seeds.map(function(i) { return i.sourceId; }));
+    var final = seeds.slice();
+    if (ok) {
+      var seq = 0, base = Date.now() * 1000;
+      merged.forEach(function(item) {
+        if (seen.has(item.sourceId)) return;
+        seen.add(item.sourceId);
+        final.push(Object.assign({}, item, { id: base + (seq++), createdAt: Date.now(), type: 'tele' }));
+      });
+    } else {
+      data.tele.forEach(function(i) { if (i.sourceId && !seen.has(i.sourceId) && i.source !== 'popnix_canal') { seen.add(i.sourceId); final.push(i); } });
+    }
+    final = final.concat(popnixCanals);
+
+    data.tele = final;
+    data._v = (data._v || 0) + 1;
+    TFStorage.set('thaiflood_data', data);
+    TFStorage.set('thaiflood_tele_cache', { lastFetch: ok ? Date.now() : (TFStorage.get('thaiflood_tele_cache', {}).lastFetch || null), sources: status, counts: counts, total: final.length });
+
+    renderMarkers();
+    if (currentView === 'settings' && isAdmin) renderTelemetryStatus();
+    return final.length;
+  } catch (e) { tfLog('loadTelemetryStations error: ' + e.message, true); return 0; }
+}
+
+async function fetchTelemetryDualSource() {
+  var results = await Promise.allSettled([
+    (async function() {
+      var r = await fetchWithRetry('https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel_load');
+      var d = adaptThaiWater(await r.json());
+      if (!d.length) throw new Error('ไม่มีข้อมูล');
+      return { source: 'ThaiWater', data: d };
+    })(),
+    (async function() {
+      var eps = ['https://weather.bangkok.go.th/water/api/lastdata'];
+      for (var i = 0; i < eps.length; i++) {
+        try {
+          var r = await fetchWithRetry(eps[i], { headers: { 'Accept': 'application/json' } }, 1, 5000);
+          var d = adaptBMA(await r.json());
+          if (d.length) return { source: 'BMA', data: d };
+        } catch (e) {}
+      }
+      throw new Error('BMA fail');
+    })()
+  ]);
+  var merged = [], seen = new Set(), status = { ThaiWater: 'fail', BMA: 'fail' }, counts = { ThaiWater: 0, BMA: 0 };
+  results.forEach(function(r) {
+    if (r.status === 'fulfilled' && r.value && r.value.data && r.value.data.length) {
+      status[r.value.source] = 'ok';
+      r.value.data.forEach(function(item) {
+        if (seen.has(item.sourceId)) return;
+        seen.add(item.sourceId); merged.push(item); counts[r.value.source]++;
+      });
+    }
+  });
+  return { merged: merged, status: status, counts: counts };
+}
+
+function renderTelemetryStatus() {
+  var el = document.getElementById('tele-status-list'); if (!el) return;
+  var c = TFStorage.get('thaiflood_tele_cache', {});
+  var s = c.sources || {}, n = c.counts || {};
+  var popnixMeta = TFStorage.get('popnix_meta', null);
+  var rows = [
+    { label: '🌊 POPNIX Canals (หลัก)', ok: popnixMeta && popnixMeta.ok && popnixMeta.canals > 0, count: popnixMeta ? (popnixMeta.canals || 0) : 0 },
+    { label: '💧 ThaiWater (สำรอง)', ok: s.ThaiWater === 'ok', count: n.ThaiWater || 0 },
+    { label: '🌆 กทม. BMA (สำรอง)', ok: s.BMA === 'ok', count: n.BMA || 0 }
+  ];
+  el.innerHTML = rows.map(function(r) {
+    return '<div style="display:flex;justify-content:space-between;padding:12px;background:#f8fafc;border-radius:12px;margin-bottom:6px;align-items:center">'
+      + '<div><p style="font-size:13px;font-weight:500;margin:0">' + r.label + '</p>'
+      + '<p style="font-size:11px;color:#64748b;margin:2px 0 0">' + (r.ok ? r.count + ' สถานี' : 'ใช้แคช/seed') + '</p></div>'
+      + '<span style="font-size:11px;color:' + (r.ok ? '#0d9488' : '#d97706') + ';font-weight:500">' + (r.ok ? '✓ ออนไลน์' : '⚠️ แคช') + '</span></div>';
+  }).join('');
+  var t = document.getElementById('tele-total'), u = document.getElementById('tele-last-update');
+  if (t) t.textContent = 'จำนวนสถานี: ' + (data.tele || []).length + ' จุด';
+  if (u) u.textContent = 'อัปเดตล่าสุด: ' + (popnixMeta ? new Date(popnixMeta.lastFetch).toLocaleString('th-TH') : '-');
+}
+
+async function forceReloadTelemetry() {
+  showToast('กำลังโหลดใหม่...');
+  TFStorage.remove('thaiflood_tele_cache');
+  await Promise.allSettled([loadPopnixData(true), loadTelemetryStations(true)]);
+  renderTelemetryStatus();
+  renderMarkers();
+}
+
+async function runDebugTest() {
+  var el = document.getElementById('debug-results'); if (!el) return;
+  el.innerHTML = 'กำลังทดสอบ...';
+  var endpoints = [
+    'https://flood.pop.in.th/api_overview.php?w=60',
+    'https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel_load',
+    'https://weather.bangkok.go.th/water/api/lastdata',
+    'https://app.rid.go.th/reservoir/api/dam/public',
+    'https://api.open-meteo.com/v1/forecast?latitude=13.75&longitude=100.50&current=temperature_2m'
+  ];
+  var html = '';
+  for (var i = 0; i < endpoints.length; i++) {
+    var u = endpoints[i], t0 = performance.now();
+    try {
+      var c = new AbortController(), tid = setTimeout(function() { c.abort(); }, 6000);
+      var r = await fetch(u, { signal: c.signal }); clearTimeout(tid);
+      var ms = Math.round(performance.now() - t0);
+      html += '<div style="padding:6px;background:' + (r.ok ? '#f0fdfa' : '#fef2f2') + ';border-radius:6px;margin:4px 0;color:' + (r.ok ? '#0f766e' : '#991b1b') + '">' + (r.ok ? '✓' : '✗') + ' ' + r.status + ' · ' + ms + 'ms · ' + u.substring(0, 55) + '</div>';
+    } catch (e) {
+      var ms2 = Math.round(performance.now() - t0);
+      html += '<div style="padding:6px;background:#fef3c7;border-radius:6px;margin:4px 0;color:#92400e">⚠️ ' + ms2 + 'ms · ' + e.message + '</div>';
+    }
+  }
+  el.innerHTML = html;
+}
+
+/* ═══ RID dams — คืนจากต้นฉบับ (เต็ม) ═══ */
+async function fetchRidDams(force) {
+  var el = document.getElementById('rid-dams-content'); if (!el) return;
+  if (el.dataset.loaded && !force) return;
+  el.innerHTML = '<p style="color:#94a3b8">กำลังโหลด...</p>';
+
+  function collectDams(node, out, depth) {
+    depth = depth || 0;
+    if (depth > 8 || !node) return;
+    if (Array.isArray(node)) { for (var i = 0; i < node.length; i++) collectDams(node[i], out, depth + 1); return; }
+    if (typeof node !== 'object') return;
+    var nameKeys = ['dam_name','damname','dam_name_th','DAM_NAME','dam_name_eng','DAM_NAME_ENG','damName','dam_name_en','DAM_NAME_TH','reservoir_name','reservoirName'];
+    var hasDamName = false;
+    for (var a = 0; a < nameKeys.length; a++) { var nv = node[nameKeys[a]]; if (nv && typeof nv === 'string' && nv.trim()) { hasDamName = true; break; } }
+    var hasQ = node.DAM_Q != null || node.DAM_QStore != null || node.dam_q != null || node.dam_q_store != null;
+    if (hasDamName || hasQ) { out.push(node); return; }
+    for (var k in node) { if (node[k] && typeof node[k] === 'object') collectDams(node[k], out, depth + 1); }
+  }
+  function collectLeaves(node, out, depth) {
+    depth = depth || 0;
+    if (depth > 8 || !node) return;
+    if (Array.isArray(node)) { for (var i = 0; i < node.length; i++) collectLeaves(node[i], out, depth + 1); return; }
+    if (typeof node !== 'object') return;
+    var hasNested = false;
+    for (var k in node) { if (node[k] && typeof node[k] === 'object') { hasNested = true; break; } }
+    if (!hasNested) { if (Object.keys(node).length >= 3) out.push(node); return; }
+    for (var k2 in node) { if (node[k2] && typeof node[k2] === 'object') collectLeaves(node[k2], out, depth + 1); }
+  }
+  function getName(x) {
+    var keys = ['dam_name','damname','dam_name_th','DAM_NAME','dam_name_eng','DAM_NAME_ENG','damName','dam_name_en','DAM_NAME_TH','reservoir_name','reservoirName','name','NAME'];
+    for (var i = 0; i < keys.length; i++) { var v = x[keys[i]]; if (v && typeof v === 'string' && v.trim()) return v.trim(); }
+    var best = '';
+    for (var k in x) { var v2 = x[k]; if (typeof v2 === 'string' && v2.trim().length > best.length && v2.length < 100 && !/^\d+$/.test(v2)) best = v2.trim(); }
+    return best || '-';
+  }
+  function getPct(x) {
+    var direct = ['dam_percent','percent','percent_storage','storage_percent','DAM_PERCENT','percentStorage','dam_percent_storage','dam_storage_percent','dam_water_percent','dam_use_percent','percent_water','dam_water_storage_percent'];
+    for (var i = 0; i < direct.length; i++) { var v = x[direct[i]]; if (v != null && v !== '') { var p = parseFloat(v); if (!isNaN(p)) { if (p > 0 && p <= 1) p *= 100; return p; } } }
+    var storeKeys = ['DAM_QStore','dam_q_store','dam_qstore','storage','dam_volume','dam_water','dam_storage','DAM_VOLUME','dam_storage_volume','dam_water_volume','DAM_Q_STORE','water_storage','current_storage'];
+    var capKeys = ['DAM_Q','dam_q','capacity','dam_capacity','max_storage','DAM_CAPACITY','dam_q_max','dam_full_capacity','dam_storage_capacity','DAM_Q_MAX','dam_capacity_max'];
+    var store = null, cap = null;
+    for (var j = 0; j < storeKeys.length; j++) { var vs = x[storeKeys[j]]; if (vs != null && vs !== '' && !isNaN(parseFloat(vs))) { store = parseFloat(vs); break; } }
+    for (var m = 0; m < capKeys.length; m++) { var vc = x[capKeys[m]]; if (vc != null && vc !== '' && !isNaN(parseFloat(vc))) { cap = parseFloat(vc); break; } }
+    if (store !== null && cap !== null && cap > 0) { var pct = (store / cap) * 100; if (pct >= 0 && pct <= 150) return pct; }
+    return null;
+  }
+
+  var REGION_RE = /ภาค|เหนือ|กลาง|ตะวันออก|ตะวันตก|ใต้|region|north|central|east|west|south/i;
+
+  try {
+    var r = await fetch('https://app.rid.go.th/reservoir/api/dam/public', { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var j = await r.json();
+    try { console.log('[TF] RID raw:', j); } catch(e) {}
+    var dams = [];
+    collectDams(j, dams);
+    if (!dams.length) { collectLeaves(j, dams); dams = dams.filter(function(x) { return !REGION_RE.test(getName(x)); }); }
+    if (!dams.length) { el.innerHTML = '<p style="color:#64748b">ไม่พบข้อมูล</p>'; return; }
+    var items = dams.slice(0, 40).map(function(x) { return { name: getName(x), pct: getPct(x) }; });
+    var good = items.filter(function(i) { return i.name !== '-' && !REGION_RE.test(i.name); }).length;
+    if (good === 0) {
+      var sample = dams[0];
+      var keys = Object.keys(sample).slice(0, 25).join(', ');
+      el.innerHTML = '<div style="font-size:11px;color:#92400e;background:#fef3c7;padding:10px;border-radius:8px;line-height:1.5"><p style="margin:0 0 4px;font-weight:700">⚠️ พบข้อมูล ' + dams.length + ' รายการ แต่ไม่รู้จักฟิลด์</p><p style="margin:4px 0 0;word-break:break-all">ฟิลด์: ' + escapeHtml(keys) + '</p><p style="margin:4px 0 0;word-break:break-all;font-family:monospace;font-size:10px">' + escapeHtml(JSON.stringify(sample).slice(0, 500)) + '</p></div>';
+      return;
+    }
+    el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;max-height:22rem;overflow-y:auto">'
+      + items.map(function(it) {
+        var pct = it.pct;
+        var clr = pct == null ? '#94a3b8' : (pct > 80 ? '#e11d48' : pct > 50 ? '#d97706' : '#0d9488');
+        var pctText = (pct != null && !isNaN(pct)) ? pct.toFixed(1) + '%' : '-';
+        return '<div style="padding:10px;background:#f8fafc;border-radius:12px"><p style="font-size:12px;font-weight:500;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(it.name) + '">' + escapeHtml(it.name) + '</p><p style="font-size:11px;color:' + clr + ';margin:2px 0 0">' + pctText + '</p></div>';
+      }).join('') + '</div>';
+    el.dataset.loaded = '1';
+  } catch (e) {
+    el.innerHTML = '<p style="color:#d97706;font-size:12px">ดึงข้อมูลไม่ได้ (' + escapeHtml(e.message) + ') — ดูได้ที่ <a href="https://www.thaiwater.net" target="_blank" style="color:#0d9488;text-decoration:underline">ThaiWater.net</a></p>';
+  }
+}
+
+/* ═══ Weather — คืนจากต้นฉบับ ═══ */
+async function fetchWeather(force) {
+  var el = document.getElementById('weather-content'); if (!el) return;
+  if (el.dataset.loaded && !force) return;
+  el.innerHTML = '<p style="color:#94a3b8">กำลังโหลด...</p>';
+  try {
+    var r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=13.75&longitude=100.50&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m&timezone=Asia%2FBangkok');
+    var d = await r.json(); var c = d.current;
+    var codes = { 0:'แจ่มใส',1:'แจ่มใสส่วนใหญ่',2:'เมฆบางส่วน',3:'เมฆมาก',45:'หมอก',51:'ฝนละออง',61:'ฝนเล็กน้อย',63:'ฝนปานกลาง',65:'ฝนหนัก',80:'ฝนเป็นช่วง',95:'พายุฝน' };
+    el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px">'
+      + '<div style="background:#e0f2fe;padding:12px;border-radius:12px;text-align:center"><p style="font-size:22px;font-weight:700;color:#0369a1;margin:0">' + c.temperature_2m + '°</p><p style="font-size:11px;color:#64748b;margin:2px 0 0">อุณหภูมิ</p></div>'
+      + '<div style="background:#dbeafe;padding:12px;border-radius:12px;text-align:center"><p style="font-size:22px;font-weight:700;color:#1e40af;margin:0">' + c.relative_humidity_2m + '%</p><p style="font-size:11px;color:#64748b;margin:2px 0 0">ความชื้น</p></div>'
+      + '<div style="background:#e0e7ff;padding:12px;border-radius:12px;text-align:center"><p style="font-size:22px;font-weight:700;color:#4338ca;margin:0">' + c.precipitation + 'mm</p><p style="font-size:11px;color:#64748b;margin:2px 0 0">ฝน</p></div>'
+      + '<div style="background:#f1f5f9;padding:12px;border-radius:12px;text-align:center"><p style="font-size:18px;font-weight:700;margin:0">' + c.wind_speed_10m + '</p><p style="font-size:11px;color:#64748b;margin:2px 0 0">ลม km/h</p></div>'
+      + '</div><p style="margin-top:12px;font-size:13px">สภาพ: <strong>' + escapeHtml(codes[c.weather_code] || 'ไม่ทราบ') + '</strong> (กทม. • Open-Meteo)</p>';
+    el.dataset.loaded = '1';
+  } catch (e) { el.innerHTML = '<p style="color:#e11d48">โหลดไม่ได้: ' + escapeHtml(e.message) + '</p>'; }
+}
+
+/* ═══ PWA + Toast + Link ═══ */
+function registerPWA() {
+  try {
+    var mf = { name: 'ThaiFlood Watch', short_name: 'ThaiFlood', start_url: './', display: 'standalone', background_color: '#0f172a', theme_color: '#0d9488', lang: 'th' };
+    var l = document.createElement('link'); l.rel = 'manifest';
+    l.href = URL.createObjectURL(new Blob([JSON.stringify(mf)], { type: 'application/manifest+json' }));
+    document.head.appendChild(l);
+  } catch (e) {}
+}
+
+var toastTimer = null;
+function showToast(msg) {
+  document.querySelectorAll('#toast').forEach(function(e) { e.remove(); });
+  if (toastTimer) clearTimeout(toastTimer);
+  var t = document.createElement('div');
+  t.id = 'toast';
+  t.style.cssText = 'position:fixed;bottom:6rem;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 20px;border-radius:12px;box-shadow:0 10px 15px -3px rgba(0,0,0,.2);z-index:99999;font-size:14px;font-weight:500;pointer-events:none;max-width:90vw;text-align:center';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  toastTimer = setTimeout(function() { t.style.opacity = '0'; t.style.transition = 'opacity .25s'; setTimeout(function() { t.remove(); }, 250); }, 3500);
+}
+
+document.addEventListener('click', function(e) {
+  var a = e.target.closest && e.target.closest('a[href^="http"]');
+  if (!a) return;
+  var href = a.getAttribute('href');
+  if (!href || href.indexOf('http') !== 0) return;
+  e.preventDefault();
+  try { window.open(href, '_blank', 'noopener,noreferrer'); } catch (err) {}
+}, true);
+</script>
+</body>
+</html>
